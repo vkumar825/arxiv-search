@@ -1,6 +1,9 @@
 # Milvus
 volumes
 
+# Misc
+data
+
 # Logs
 logs
 *.log

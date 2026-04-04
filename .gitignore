@@ -3,6 +3,7 @@ volumes
 
 # Misc
 data
+.DS_Store
 
 # Logs
 logs

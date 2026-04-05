@@ -2,33 +2,54 @@ import { fileURLToPath } from "url";
 import { MilvusClient, DataType } from "@zilliz/milvus2-sdk-node";
 process.loadEnvFile();
 
-const address = process.env.MILVUS_ADDRESS;
-const token = process.env.MILVUS_TOKEN;
-const client = new MilvusClient({ address, token });
+let clientPromise = null;
 
-export const getMilvusCollections = async (viewCollections = false) => {
-  try {
-    const res = await client.listCollections();
-    const milvusCollectionsList = res.data.map(
-      (milvusCollection) => milvusCollection.name,
-    );
+export const getMilvusClient = async () => {
+  if (clientPromise) {
+    return clientPromise;
+  }
 
-    if (viewCollections && milvusCollectionsList.length !== 0) {
-      console.log(
-        `Successfully retrieved ${milvusCollectionsList.length} Milvus collection(s):`,
-      );
-      console.log(milvusCollectionsList);
+  clientPromise = (async () => {
+    try {
+      const client = new MilvusClient({
+        address: process.env.MILVUS_ADDRESS,
+        token: process.env.MILVUS_TOKEN,
+      });
+
+      const checkHealth = await client.checkHealth();
+
+      if (!checkHealth.isHealthy) {
+        throw new Error("Milvus is unhealthy or unavailable");
+      }
+
+      return client;
+    } catch (error) {
+      console.error("Milvus Initialization Error:", error);
+      clientPromise = null;
+      throw error;
     }
-    return milvusCollectionsList;
+  })();
+
+  return clientPromise;
+};
+
+export const getMilvusCollections = async () => {
+  try {
+    const client = await getMilvusClient();
+    const res = await client.listCollections();
+    return res.data.map((milvusCollection) => ({
+      collection_name: milvusCollection.name,
+    }));
   } catch (error) {
     console.error("Failed to retrieve Milvus collection(s):", error);
+    throw error;
   }
 };
 
 export const createMilvusCollection = async (name) => {
   const collections = await getMilvusCollections();
 
-  if (collections.includes(name)) {
+  if (collections.some((c) => c.collection_name === name)) {
     console.log(`Milvus collection ${name} already created`);
     return;
   }
@@ -76,6 +97,7 @@ export const createMilvusCollection = async (name) => {
   ];
 
   try {
+    const client = await getMilvusClient();
     await client.createCollection({
       collection_name: name,
       schema: schema,
@@ -84,24 +106,27 @@ export const createMilvusCollection = async (name) => {
     console.log(`Successfully created Milvus collection: ${name}`);
   } catch (error) {
     console.error("Failed to create Milvus collection:", error);
+    throw error;
   }
 };
 
 export const dropMilvusCollection = async (name) => {
   const collections = await getMilvusCollections();
 
-  if (!collections.includes(name)) {
+  if (!collections.some((c) => c.collection_name === name)) {
     console.log(`Cannot drop non-existent Milvus collection: ${name}`);
     return;
-  } else {
-    try {
-      await client.dropCollection({
-        collection_name: name,
-      });
-      console.log(`Successfully dropped Milvus collection: ${name}`);
-    } catch (error) {
-      console.error("Failed to drop Milvus collection: ", error);
-    }
+  }
+
+  try {
+    const client = await getMilvusClient();
+    await client.dropCollection({
+      collection_name: name,
+    });
+    console.log(`Successfully dropped Milvus collection: ${name}`);
+  } catch (error) {
+    console.error("Failed to drop Milvus collection: ", error);
+    throw error;
   }
 };
 
@@ -110,35 +135,29 @@ const isMain = process.argv[1] == fileURLToPath(import.meta.url);
 if (isMain) {
   const [, , command, value] = process.argv;
 
-  /* 
-  To activate these functions, run from the root dir
-
-  node server/milvus_utils.js command value 
-  OR 
-  node server/milvus_utils.js command
-
-  -----
-
-  create-collection:
-  node server/milvus_utils.js create-collection test_collection
-
-  drop-collection:
-  node server/milvus_utils.js drop-collection test_collection
-
-  get-collections:
-  node server/milvus_utils.js get-collections
-  
-  */
-
-  if (command == "create-collection") {
-    createMilvusCollection(value);
-  }
-
-  if (command == "drop-collection") {
-    dropMilvusCollection(value);
-  }
-
-  if (command == "get-collections") {
-    getMilvusCollections(true);
-  }
+  (async () => {
+    try {
+      switch (command) {
+        case "create-collection":
+          if (!value) throw new Error("Collection name required");
+          await createMilvusCollection(value);
+          break;
+        case "drop-collection":
+          if (!value) throw new Error("Collection name required");
+          await dropMilvusCollection(value);
+          break;
+        case "get-collections":
+          const collections = await getMilvusCollections();
+          console.table(collections);
+          break;
+        default:
+          console.log("Invalid command, please try again");
+      }
+    } catch (error) {
+      console.error("CLI Error:", error);
+    } finally {
+      const client = await getMilvusClient().catch(() => null);
+      if (client) await client.closeConnection();
+    }
+  })();
 }

@@ -80,7 +80,9 @@ const createMilvusAlias = async (client, aliasName, collectionName) => {
       collection_name: collectionName,
       alias: aliasName,
     });
-    console.log(`Successfully created alias ${aliasName} for collection ${collectionName}`);
+    console.log(
+      `Successfully created alias ${aliasName} for collection ${collectionName}`,
+    );
   } catch (error) {
     console.error(`Failed to create alias ${aliasName} for ${collectionName}`);
     throw error;
@@ -99,12 +101,52 @@ const dropMilvusAlias = async (client, aliasName) => {
   }
 };
 
+const reassignMilvusAlias = async (client, aliasName, collectionName) => {
+  try {
+    await client.alterAlias({
+      collection_name: collectionName,
+      alias: aliasName,
+    });
+    console.log(
+      `Successfully reassigned Milvus alias to ${collectionName}`,
+    );
+  } catch (error) {
+    console.error("Failed to reassign Milvus alias: ", error);
+    throw error;
+  }
+}
+
+const renameMilvusCollection = async (client, oldName, newName) => {
+  try {
+    await client.renameCollection({
+      collection_name: oldName,
+      new_collection_name: newName,
+    });
+    console.log(
+      `Successfully renamed Milvus collection from ${oldName} to ${newName}`,
+    );
+  } catch (error) {
+    console.error("Failed to rename Milvus collection: ", error);
+    throw error;
+  }
+};
+
 const dropMilvusCollection = async (client, name) => {
   const collections = await getMilvusCollections(client);
 
   if (!collections.some((c) => c.collection_name === name)) {
     console.log(`Cannot drop non-existent Milvus collection: ${name}`);
     return;
+  }
+
+  const res = await client.listAliases({collection_name: name})
+
+  if (Array.isArray(res.aliases) && res.aliases.length > 0) {
+    console.log(`Detected ${res.aliases.length} alias(es), dropping them first...`)
+    for (const alias of res.aliases) {
+      await dropMilvusAlias(client, alias);
+    }
+    console.log("Finished dropping alias(es), now dropping collection...")
   }
 
   try {
@@ -238,9 +280,45 @@ if (isMain) {
     const list = program.command("list").description("List Milvus resources");
 
     list.action(
-      runMilvusClient(async (client, name) => {
+      runMilvusClient(async (client) => {
+        // get a list of both collection, and their associated aliases if applicable
         const collections = await getMilvusCollections(client);
-        console.table(collections);
+        const aliasMap = new Map();
+
+        try {
+          for (const collection of collections) {
+            const res = await client.listAliases({
+              collection_name: collection.collection_name,
+            });
+            aliasMap.set(collection.collection_name, res.aliases);
+          }
+          console.table(Array.from(aliasMap, ([key, value]) => ({
+            collection_name: key,
+            aliases: value,
+          })));
+        } catch (error) {
+          console.error("Failed to retrieve Milvus alias(es):", error);
+        }
+      }),
+    );
+
+    const rename = program
+      .command("rename <oldName> <newName>")
+      .description("Rename a collection");
+
+    rename.action(
+      runMilvusClient(async (client, oldName, newName) => {
+        await renameMilvusCollection(client, oldName, newName);
+      }),
+    );
+
+    const reassign = program
+      .command("reassign <aliasName> <collectionName>")
+      .description("Reassign an alias to another collection");
+
+    reassign.action(
+      runMilvusClient(async (client, aliasName, collectionName) => {
+        await reassignMilvusAlias(client, aliasName, collectionName);
       }),
     );
 

@@ -74,6 +74,31 @@ const getMilvusCollections = async (client) => {
   }
 };
 
+const createMilvusAlias = async (client, aliasName, collectionName) => {
+  try {
+    await client.createAlias({
+      collection_name: collectionName,
+      alias: aliasName,
+    });
+    console.log(`Successfully created alias ${aliasName} for collection ${collectionName}`);
+  } catch (error) {
+    console.error(`Failed to create alias ${aliasName} for ${collectionName}`);
+    throw error;
+  }
+};
+
+const dropMilvusAlias = async (client, aliasName) => {
+  try {
+    await client.dropAlias({
+      alias: aliasName,
+    });
+    console.log(`Successfully dropped alias: ${aliasName}`);
+  } catch (error) {
+    console.error(`Failed to drop alias ${aliasName}`);
+    throw error;
+  }
+};
+
 const dropMilvusCollection = async (client, name) => {
   const collections = await getMilvusCollections(client);
 
@@ -181,6 +206,15 @@ if (isMain) {
         }),
       );
 
+    create
+      .command("alias <aliasName> <collectionName>")
+      .description("Create alias for a collection")
+      .action(
+        runMilvusClient(async (client, aliasName, collectionName) => {
+          await createMilvusAlias(client, aliasName, collectionName);
+        }),
+      );
+
     const drop = program.command("drop").description("Drop Milvus resources");
 
     drop
@@ -189,6 +223,15 @@ if (isMain) {
       .action(
         runMilvusClient(async (client, name) => {
           await dropMilvusCollection(client, name);
+        }),
+      );
+
+    drop
+      .command("alias <aliasName>")
+      .description("Drop an alias")
+      .action(
+        runMilvusClient(async (client, aliasName) => {
+          await dropMilvusAlias(client, aliasName);
         }),
       );
 

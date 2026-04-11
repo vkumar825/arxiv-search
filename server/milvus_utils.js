@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { fileURLToPath } from "url";
 import { MilvusClient, DataType } from "@zilliz/milvus2-sdk-node";
 process.loadEnvFile();
@@ -33,9 +35,8 @@ export const getMilvusClient = async () => {
   return clientPromise;
 };
 
-export const getMilvusCollections = async () => {
+export const getMilvusCollections = async (client) => {
   try {
-    const client = await getMilvusClient();
     const res = await client.listCollections();
     return res.data.map((milvusCollection) => ({
       collection_name: milvusCollection.name,
@@ -46,8 +47,8 @@ export const getMilvusCollections = async () => {
   }
 };
 
-export const createMilvusCollection = async (name) => {
-  const collections = await getMilvusCollections();
+export const createMilvusCollection = async (client, name) => {
+  const collections = await getMilvusCollections(client);
 
   if (collections.some((c) => c.collection_name === name)) {
     console.log(`Milvus collection ${name} already created`);
@@ -97,7 +98,6 @@ export const createMilvusCollection = async (name) => {
   ];
 
   try {
-    const client = await getMilvusClient();
     await client.createCollection({
       collection_name: name,
       schema: schema,
@@ -110,8 +110,8 @@ export const createMilvusCollection = async (name) => {
   }
 };
 
-export const dropMilvusCollection = async (name) => {
-  const collections = await getMilvusCollections();
+export const dropMilvusCollection = async (client, name) => {
+  const collections = await getMilvusCollections(client);
 
   if (!collections.some((c) => c.collection_name === name)) {
     console.log(`Cannot drop non-existent Milvus collection: ${name}`);
@@ -119,7 +119,6 @@ export const dropMilvusCollection = async (name) => {
   }
 
   try {
-    const client = await getMilvusClient();
     await client.dropCollection({
       collection_name: name,
     });
@@ -134,20 +133,28 @@ const isMain = process.argv[1] == fileURLToPath(import.meta.url);
 
 if (isMain) {
   const [, , command, value] = process.argv;
+  let client;
+
+  try {
+    client = await getMilvusClient();
+  } catch (error) {
+    console.error("Failed to get Milvus client:", error);
+    process.exit(1);
+  }
 
   (async () => {
     try {
       switch (command) {
         case "create-collection":
           if (!value) throw new Error("Collection name required");
-          await createMilvusCollection(value);
+          await createMilvusCollection(client, value);
           break;
         case "drop-collection":
           if (!value) throw new Error("Collection name required");
-          await dropMilvusCollection(value);
+          await dropMilvusCollection(client, value);
           break;
         case "get-collections":
-          const collections = await getMilvusCollections();
+          const collections = await getMilvusCollections(client);
           console.table(collections);
           break;
         default:
@@ -156,7 +163,6 @@ if (isMain) {
     } catch (error) {
       console.error("CLI Error:", error);
     } finally {
-      const client = await getMilvusClient().catch(() => null);
       if (client) await client.closeConnection();
     }
   })();

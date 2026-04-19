@@ -3,6 +3,8 @@
 import { fileURLToPath } from "url";
 import { MilvusClient, DataType } from "@zilliz/milvus2-sdk-node";
 import { Command } from "commander";
+import csv from "csvtojson";
+import { getEmbeddedObjs, getPipelineInstance } from "./embeddings.js";
 
 process.loadEnvFile();
 
@@ -62,6 +64,70 @@ export const runMilvusClient =
     }
   };
 
+const insertToMilvus = async (client, objects, collectionName, batchSize) => {
+  let batch = [];
+  let objectsToEmbed = [];
+  const pipeline = await getPipelineInstance();
+  const embeddingBatchSize = parseInt(process.env.EMBEDDING_BATCH_SIZE, 10);
+
+  const batchInsert = async (data) => {
+    try {
+      await client.insert({
+        collection_name: collectionName,
+        data: data,
+      });
+    } catch (error) {
+      console.log("Failed to insert batch, retrying them individually...");
+
+      // if batch insert fails, insert each item individually
+      for (const obj of data) {
+        try {
+          await client.insert({
+            collection_name: collectionName,
+            data: [obj],
+          });
+        } catch (error) {
+          console.error(`Failed to insert ${obj.headline}`);
+        }
+      }
+    }
+  };
+
+  try {
+    for (const obj of objects) {
+      if (objectsToEmbed.length >= embeddingBatchSize) {
+        const embeddedObjs = await getEmbeddedObjs(pipeline, objectsToEmbed);
+        batch.push(...embeddedObjs);
+        objectsToEmbed = []; // reset array to embed the next subset
+      }
+
+      objectsToEmbed.push(obj);
+
+      if (batch.length >= batchSize) {
+        console.log(`Inserting batch of ${batch.length} to Milvus`);
+        await batchInsert(batch);
+        batch = []; // reset array for next batch
+      }
+    }
+
+    // embed any remaining objects in objectsToEmbed that didn't reach embeddingBatchSize
+    if (objectsToEmbed.length > 0) {
+      const leftoverEmbeds = await getEmbeddedObjs(pipeline, objectsToEmbed);
+      batch.push(...leftoverEmbeds);
+    }
+
+    if (batch.length > 0) {
+      console.log(`Dealing with leftover batches of ${batch.length}`);
+      await batchInsert(batch);
+    }
+
+    console.log("Completed inserting objects to Milvus.");
+  } catch (error) {
+    console.error("Failed to insert objects to Milvus:", error);
+    throw error;
+  }
+};
+
 const getMilvusCollections = async (client) => {
   try {
     const res = await client.listCollections();
@@ -107,14 +173,12 @@ const reassignMilvusAlias = async (client, aliasName, collectionName) => {
       collection_name: collectionName,
       alias: aliasName,
     });
-    console.log(
-      `Successfully reassigned Milvus alias to ${collectionName}`,
-    );
+    console.log(`Successfully reassigned Milvus alias to ${collectionName}`);
   } catch (error) {
     console.error("Failed to reassign Milvus alias: ", error);
     throw error;
   }
-}
+};
 
 const renameMilvusCollection = async (client, oldName, newName) => {
   try {
@@ -139,14 +203,16 @@ const dropMilvusCollection = async (client, name) => {
     return;
   }
 
-  const res = await client.listAliases({collection_name: name})
+  const res = await client.listAliases({ collection_name: name });
 
   if (Array.isArray(res.aliases) && res.aliases.length > 0) {
-    console.log(`Detected ${res.aliases.length} alias(es), dropping them first...`)
+    console.log(
+      `Detected ${res.aliases.length} alias(es), dropping them first...`,
+    );
     for (const alias of res.aliases) {
       await dropMilvusAlias(client, alias);
     }
-    console.log("Finished dropping alias(es), now dropping collection...")
+    console.log("Finished dropping alias(es), now dropping collection...");
   }
 
   try {
@@ -172,19 +238,19 @@ const createMilvusCollection = async (client, name) => {
   const schema = [
     {
       name: "id",
-      data_type: DataType.Int64,
+      data_type: DataType.VarChar,
+      max_length: 64,
       is_primary_key: true,
-      auto_id: false,
     },
     {
       name: "vector",
       data_type: DataType.FloatVector,
-      dim: 384, // Using Xenova/all-MiniLM-L6-v2 model
+      dim: 384,
     },
     {
       name: "headline",
       data_type: DataType.VarChar,
-      max_length: 512,
+      max_length: 256,
     },
     {
       name: "category",
@@ -237,11 +303,11 @@ if (isMain) {
 
     const create = program
       .command("create")
-      .description("Create Milvus resources");
+      .description("create Milvus resources");
 
     create
       .command("collection <name>")
-      .description("Create a new collection")
+      .description("create a new collection")
       .action(
         runMilvusClient(async (client, name) => {
           await createMilvusCollection(client, name);
@@ -250,7 +316,7 @@ if (isMain) {
 
     create
       .command("alias <aliasName> <collectionName>")
-      .description("Create alias for a collection")
+      .description("create alias for a collection")
       .action(
         runMilvusClient(async (client, aliasName, collectionName) => {
           await createMilvusAlias(client, aliasName, collectionName);
@@ -261,7 +327,7 @@ if (isMain) {
 
     drop
       .command("collection <name>")
-      .description("Drop a collection")
+      .description("drop a collection")
       .action(
         runMilvusClient(async (client, name) => {
           await dropMilvusCollection(client, name);
@@ -270,18 +336,18 @@ if (isMain) {
 
     drop
       .command("alias <aliasName>")
-      .description("Drop an alias")
+      .description("drop an alias")
       .action(
         runMilvusClient(async (client, aliasName) => {
           await dropMilvusAlias(client, aliasName);
         }),
       );
 
-    const list = program.command("list").description("List Milvus resources");
+    const list = program.command("list").description("list Milvus resources");
 
     list.action(
       runMilvusClient(async (client) => {
-        // get a list of both collection, and their associated aliases if applicable
+        // get a list of both collection, and their associated aliases if present
         const collections = await getMilvusCollections(client);
         const aliasMap = new Map();
 
@@ -292,10 +358,12 @@ if (isMain) {
             });
             aliasMap.set(collection.collection_name, res.aliases);
           }
-          console.table(Array.from(aliasMap, ([key, value]) => ({
-            collection_name: key,
-            aliases: value,
-          })));
+          console.table(
+            Array.from(aliasMap, ([key, value]) => ({
+              collection_name: key,
+              aliases: value,
+            })),
+          );
         } catch (error) {
           console.error("Failed to retrieve Milvus alias(es):", error);
         }
@@ -304,7 +372,7 @@ if (isMain) {
 
     const rename = program
       .command("rename <oldName> <newName>")
-      .description("Rename a collection");
+      .description("rename a collection");
 
     rename.action(
       runMilvusClient(async (client, oldName, newName) => {
@@ -314,11 +382,35 @@ if (isMain) {
 
     const reassign = program
       .command("reassign <aliasName> <collectionName>")
-      .description("Reassign an alias to another collection");
+      .description("reassign an alias to another collection");
 
     reassign.action(
       runMilvusClient(async (client, aliasName, collectionName) => {
         await reassignMilvusAlias(client, aliasName, collectionName);
+      }),
+    );
+
+    const insert = program
+      .command("insert <collectionName>")
+      .description("insert objects to a Milvus collection")
+      .option(
+        "--batch-size <size>",
+        "specify the amount to insert in batches",
+        1000,
+      );
+
+    const options = insert.opts();
+
+    insert.action(
+      runMilvusClient(async (client, collectionName) => {
+        const objects = await csv().fromFile(process.env.DATASET_PATH);
+
+        await insertToMilvus(
+          client,
+          objects,
+          collectionName,
+          parseInt(options.batchSize, 10),
+        );
       }),
     );
 

@@ -64,30 +64,35 @@ export const runMilvusClient =
     }
   };
 
-const insertToMilvus = async (client, objects, collectionName, batchSize) => {
+const ingestToMilvus = async (
+  client,
+  objects,
+  collectionName,
+  batchSize,
+  embedBatchSize,
+) => {
   let batch = [];
   let objectsToEmbed = [];
   const pipeline = await getPipelineInstance();
-  const embeddingBatchSize = parseInt(process.env.EMBEDDING_BATCH_SIZE, 10);
 
-  const batchInsert = async (data) => {
+  const batchIngest = async (data) => {
     try {
-      await client.insert({
+      await client.upsert({
         collection_name: collectionName,
         data: data,
       });
     } catch (error) {
-      console.log("Failed to insert batch, retrying them individually...");
+      console.log("Failed to ingest batch, retrying them individually...");
 
       // if batch insert fails, insert each item individually
       for (const obj of data) {
         try {
-          await client.insert({
+          await client.upsert({
             collection_name: collectionName,
             data: [obj],
           });
         } catch (error) {
-          console.error(`Failed to insert ${obj.headline}`);
+          console.error(`Failed to ingest ${obj.headline}`);
         }
       }
     }
@@ -95,22 +100,22 @@ const insertToMilvus = async (client, objects, collectionName, batchSize) => {
 
   try {
     for (const obj of objects) {
-      if (objectsToEmbed.length >= embeddingBatchSize) {
+      objectsToEmbed.push(obj);
+
+      if (objectsToEmbed.length >= embedBatchSize) {
         const embeddedObjs = await getEmbeddedObjs(pipeline, objectsToEmbed);
         batch.push(...embeddedObjs);
         objectsToEmbed = []; // reset array to embed the next subset
-      }
 
-      objectsToEmbed.push(obj);
-
-      if (batch.length >= batchSize) {
-        console.log(`Inserting batch of ${batch.length} to Milvus`);
-        await batchInsert(batch);
-        batch = []; // reset array for next batch
+        if (batch.length >= batchSize) {
+          console.log(`Inserting batch of ${batch.length} to Milvus`);
+          await batchIngest(batch);
+          batch = []; // reset array for next batch
+        }
       }
     }
 
-    // embed any remaining objects in objectsToEmbed that didn't reach embeddingBatchSize
+    // embed any remaining objects in objectsToEmbed that didn't reach embedBatchSize
     if (objectsToEmbed.length > 0) {
       const leftoverEmbeds = await getEmbeddedObjs(pipeline, objectsToEmbed);
       batch.push(...leftoverEmbeds);
@@ -118,12 +123,12 @@ const insertToMilvus = async (client, objects, collectionName, batchSize) => {
 
     if (batch.length > 0) {
       console.log(`Dealing with leftover batches of ${batch.length}`);
-      await batchInsert(batch);
+      await batchIngest(batch);
     }
 
-    console.log("Completed inserting objects to Milvus.");
+    console.log("Completed ingesting objects to Milvus.");
   } catch (error) {
-    console.error("Failed to insert objects to Milvus:", error);
+    console.error("Failed to ingest objects to Milvus:", error);
     throw error;
   }
 };
@@ -296,10 +301,8 @@ if (isMain) {
     const program = new Command();
 
     program
-      .name("milvus-utils")
-      .description(
-        "Utilities CLI tool for managing the Milvus vector database",
-      );
+      .name("milvus-cli")
+      .description("CLI tool for managing the Milvus vector database");
 
     const create = program
       .command("create")
@@ -390,26 +393,32 @@ if (isMain) {
       }),
     );
 
-    const insert = program
-      .command("insert <collectionName>")
-      .description("insert objects to a Milvus collection")
+    const ingest = program
+      .command("ingest <collectionName>")
+      .description("ingest objects to a Milvus collection")
       .option(
-        "--batch-size <size>",
-        "specify the amount to insert in batches",
+        "-b, --batch-size <number>",
+        "number of objects to ingest per batch",
         1000,
+      )
+      .option(
+        "-e, --embed-batch-size <number>",
+        "number of objects to process per embedding call",
+        128,
       );
 
-    const options = insert.opts();
+    const options = ingest.opts();
 
-    insert.action(
+    ingest.action(
       runMilvusClient(async (client, collectionName) => {
         const objects = await csv().fromFile(process.env.DATASET_PATH);
 
-        await insertToMilvus(
+        await ingestToMilvus(
           client,
           objects,
           collectionName,
           parseInt(options.batchSize, 10),
+          parseInt(options.embedBatchSize, 10),
         );
       }),
     );

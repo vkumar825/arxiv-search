@@ -1,137 +1,15 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from "url";
-import { MilvusClient, DataType } from "@zilliz/milvus2-sdk-node";
+import { DataType } from "@zilliz/milvus2-sdk-node";
 import { Command } from "commander";
 import csv from "csvtojson";
-import { getEmbeddedObjs, getPipelineInstance } from "./embeddings.js";
-
-process.loadEnvFile();
-
-let clientPromise = null;
-
-export const getMilvusClient = async () => {
-  if (clientPromise) {
-    return clientPromise;
-  }
-
-  clientPromise = (async () => {
-    try {
-      const client = new MilvusClient({
-        address: process.env.MILVUS_ADDRESS,
-        token: process.env.MILVUS_TOKEN,
-      });
-
-      const checkHealth = await client.checkHealth();
-
-      if (!checkHealth.isHealthy) {
-        throw new Error(
-          `Milvus is unhealthy or unavailable: ${checkHealth.reasons}`,
-        );
-      }
-
-      return client;
-    } catch (error) {
-      console.error("Milvus Initialization Error:", error);
-      clientPromise = null;
-      throw error;
-    }
-  })();
-
-  return clientPromise;
-};
-
-export const closeMilvusClient = async () => {
-  if (clientPromise) {
-    const client = await clientPromise;
-    await client.closeConnection();
-    clientPromise = null;
-  }
-};
-
-export const runMilvusClient =
-  (command) =>
-  async (...args) => {
-    const client = await getMilvusClient();
-
-    try {
-      await command(client, ...args);
-    } catch (error) {
-      console.error(error);
-      process.exitCode = 1;
-    } finally {
-      await closeMilvusClient();
-    }
-  };
-
-const ingestToMilvus = async (
-  client,
-  objects,
-  collectionName,
-  batchSize,
-  embedBatchSize,
-) => {
-  let batch = [];
-  let objectsToEmbed = [];
-  const pipeline = await getPipelineInstance();
-
-  const batchIngest = async (data) => {
-    try {
-      await client.upsert({
-        collection_name: collectionName,
-        data: data,
-      });
-    } catch (error) {
-      console.log("Failed to ingest batch, retrying them individually...");
-
-      // if batch insert fails, insert each item individually
-      for (const obj of data) {
-        try {
-          await client.upsert({
-            collection_name: collectionName,
-            data: [obj],
-          });
-        } catch (error) {
-          console.error(`Failed to ingest ${obj.headline}`);
-        }
-      }
-    }
-  };
-
-  try {
-    for (const obj of objects) {
-      objectsToEmbed.push(obj);
-
-      if (objectsToEmbed.length >= embedBatchSize) {
-        const embeddedObjs = await getEmbeddedObjs(pipeline, objectsToEmbed);
-        batch.push(...embeddedObjs);
-        objectsToEmbed = []; // reset array to embed the next subset
-
-        if (batch.length >= batchSize) {
-          console.log(`Inserting batch of ${batch.length} to Milvus`);
-          await batchIngest(batch);
-          batch = []; // reset array for next batch
-        }
-      }
-    }
-
-    // embed any remaining objects in objectsToEmbed that didn't reach embedBatchSize
-    if (objectsToEmbed.length > 0) {
-      const leftoverEmbeds = await getEmbeddedObjs(pipeline, objectsToEmbed);
-      batch.push(...leftoverEmbeds);
-    }
-
-    if (batch.length > 0) {
-      console.log(`Dealing with leftover batches of ${batch.length}`);
-      await batchIngest(batch);
-    }
-
-    console.log("Completed ingesting objects to Milvus.");
-  } catch (error) {
-    console.error("Failed to ingest objects to Milvus:", error);
-    throw error;
-  }
-};
+import {
+  getMilvusClient,
+  runMilvusClient,
+  closeMilvusClient,
+} from "../config/milvus-client.js";
+import { ingestToMilvus } from "../service/ingestion-service.js";
 
 const getMilvusCollections = async (client) => {
   try {
@@ -301,8 +179,10 @@ if (isMain) {
     const program = new Command();
 
     program
-      .name("milvus-cli")
-      .description("CLI tool for managing the Milvus vector database");
+      .name("milvus-utils")
+      .description(
+        "Utilities CLI tool for managing the Milvus vector database",
+      );
 
     const create = program
       .command("create")

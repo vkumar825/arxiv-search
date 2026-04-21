@@ -1,7 +1,4 @@
-#!/usr/bin/env node
-
 import { pipeline } from "@huggingface/transformers";
-import crypto from "node:crypto";
 
 process.loadEnvFile();
 
@@ -42,8 +39,8 @@ export const getEmbeddedObjs = async (pipeline, objects) => {
   }
 
   const createId = (headline) => {
-    return crypto.createHash('sha256').update(headline).digest('hex');
-  }
+    return crypto.createHash("sha256").update(headline).digest("hex");
+  };
 
   for (let i = 0; i < objects.length; i++) {
     embeddedObjs.push({

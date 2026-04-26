@@ -1,5 +1,7 @@
 import pino from "pino";
 
+process.loadEnvFile();
+
 const dest = pino.destination({
   dest: process.env.PINO_LOG_DIR,
   sync: true,

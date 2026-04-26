@@ -11,6 +11,8 @@ import {
 } from "../config/milvus-client.js";
 import { ingestToMilvus } from "../service/ingestion-service.js";
 
+process.loadEnvFile();
+
 const getMilvusCollections = async (client) => {
   try {
     const res = await client.listCollections();

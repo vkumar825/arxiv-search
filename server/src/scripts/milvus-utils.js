@@ -303,6 +303,10 @@ if (isMain) {
       }),
     );
 
-    await program.parseAsync();
+    try {
+      await program.parseAsync();
+    } catch (error) {
+      console.error("Failed to run Utilities CLI:", error);
+    }
   })();
 }

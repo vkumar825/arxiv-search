@@ -1,5 +1,6 @@
 import { getPipelineInstance, getEmbeddedObjs } from "./embedding-service.js";
 import logger from "../utils/logger.js";
+import cliProgress from "cli-progress";
 
 export const ingestToMilvus = async (
   client,
@@ -14,6 +15,18 @@ export const ingestToMilvus = async (
   const LOG_INTERVAL = 10;
   const pipeline = await getPipelineInstance();
 
+  const progressBar = new cliProgress.SingleBar({
+    format:
+      "Ingesting |" +
+      "{bar}" +
+      "| {percentage}% || {value}/{total} Objects || Failures: {fails} ETA: {eta}s",
+    barCompleteChar: "\u2588",
+    barIncompleteChar: "\u2591",
+    hideCursor: true,
+  });
+
+  progressBar.start(objects.length, 0, { fails: 0 });
+
   const batchIngest = async (data) => {
     try {
       await client.upsert({
@@ -21,6 +34,7 @@ export const ingestToMilvus = async (
         data: data,
       });
       batchCount += 1;
+      progressBar.increment(data.length);
 
       // keep track of milestone, every 10k batches, and final batch is excluded
       if (batchCount % LOG_INTERVAL === 0 && data.length === batchSize) {
@@ -47,6 +61,8 @@ export const ingestToMilvus = async (
             { headline: obj.headline, batch: batchCount },
             "Failed to ingest object",
           );
+        } finally {
+          progressBar.increment(1, { fails: failCount });
         }
       }
       if (failCount === 0) {
@@ -94,5 +110,7 @@ export const ingestToMilvus = async (
   } catch (error) {
     logger.error(error, "Failed to ingest objects to Milvus");
     throw error;
+  } finally {
+    progressBar.stop();
   }
 };

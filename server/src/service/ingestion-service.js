@@ -1,4 +1,5 @@
 import { getPipelineInstance, getEmbeddedObjs } from "./embedding-service.js";
+import logger from "../utils/logger.js";
 
 export const ingestToMilvus = async (
   client,
@@ -9,6 +10,8 @@ export const ingestToMilvus = async (
 ) => {
   let batch = [];
   let objectsToEmbed = [];
+  let batchCount = 0;
+  const LOG_INTERVAL = 10;
   const pipeline = await getPipelineInstance();
 
   const batchIngest = async (data) => {
@@ -17,8 +20,18 @@ export const ingestToMilvus = async (
         collection_name: collectionName,
         data: data,
       });
+      batchCount += 1;
+
+      // keep track of milestone, every 10k batches, and final batch is excluded
+      if (batchCount % LOG_INTERVAL === 0 && data.length === batchSize) {
+        logger.info(
+          { processed: batchCount * batchSize },
+          "Reached ingestion milestone",
+        );
+      }
     } catch (error) {
-      console.log("Failed to ingest batch, retrying them individually...");
+      logger.warn("Failed to ingest batch, retrying them individually...");
+      let failCount = 0;
 
       // if batch insert fails, insert each item individually
       for (const obj of data) {
@@ -28,8 +41,24 @@ export const ingestToMilvus = async (
             data: [obj],
           });
         } catch (error) {
-          console.error(`Failed to ingest ${obj.headline}`);
+          failCount++;
+          logger.error(
+            error,
+            { headline: obj.headline, batch: batchCount },
+            "Failed to ingest object",
+          );
         }
+      }
+      if (failCount === 0) {
+        logger.info(
+          { batch: batchCount },
+          "Successfully recovered failed batch via individual inserts",
+        );
+      } else {
+        logger.info(
+          { batch: batchCount, failCount },
+          "Batch recovery completed with partial failures",
+        );
       }
     }
   };
@@ -44,7 +73,6 @@ export const ingestToMilvus = async (
         objectsToEmbed = []; // reset array to embed the next subset
 
         if (batch.length >= batchSize) {
-          console.log(`Inserting batch of ${batch.length} to Milvus`);
           await batchIngest(batch);
           batch = []; // reset array for next batch
         }
@@ -58,13 +86,13 @@ export const ingestToMilvus = async (
     }
 
     if (batch.length > 0) {
-      console.log(`Dealing with leftover batches of ${batch.length}`);
+      logger.info({ finalBatchSize: batch.length }, "Ingesting final batch");
       await batchIngest(batch);
     }
 
-    console.log("Completed ingesting objects to Milvus.");
+    logger.info("Completed ingesting objects to Milvus.");
   } catch (error) {
-    console.error("Failed to ingest objects to Milvus:", error);
+    logger.error(error, "Failed to ingest objects to Milvus");
     throw error;
   }
 };

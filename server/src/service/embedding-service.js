@@ -9,14 +9,31 @@ export const getPipelineInstance = async () => {
     return pipelinePromise;
   }
 
-  pipelinePromise = pipeline(
-    process.env.MODEL_TASK,
-    process.env.MODEL_NAME,
-  ).catch((error) => {
-    pipelinePromise = null;
-    console.error("Failed to initialize pipeline:", error);
-    throw error;
-  });
+  try {
+    let gpuDevice = "webgpu";
+    pipelinePromise = pipeline(process.env.MODEL_TASK, process.env.MODEL_NAME, {
+      device: gpuDevice,
+    });
+  } catch (error) {
+    // if 'webgpu' fails, fallback to 'wasm' (CPU)
+    console.error(
+      "Failed to initialize pipeline with 'webgpu', trying fallback...",
+    );
+    try {
+      let cpuDevice = "wasm";
+      pipelinePromise = pipeline(
+        process.env.MODEL_TASK,
+        process.env.MODEL_NAME,
+        {
+          device: cpuDevice,
+        },
+      );
+    } catch (error) {
+      pipelinePromise = null;
+      console.error("Failed to initialize pipeline:", error);
+      throw error;
+    }
+  }
 
   return pipelinePromise;
 };

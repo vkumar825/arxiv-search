@@ -287,10 +287,8 @@ if (isMain) {
         128,
       );
 
-    const options = ingest.opts();
-
     ingest.action(
-      runMilvusClient(async (client, collectionName) => {
+      runMilvusClient(async (client, collectionName, options) => {
         const objects = await csv().fromFile(process.env.DATASET_PATH);
 
         await ingestToMilvus(

@@ -1,6 +1,5 @@
 import { pipeline } from "@huggingface/transformers";
-
-process.loadEnvFile();
+import crypto from 'crypto'
 
 let pipelinePromise = null;
 
@@ -10,29 +9,14 @@ export const getPipelineInstance = async () => {
   }
 
   try {
-    let gpuDevice = "webgpu";
+    let selectedDevice = process.env.USE_GPU === "true" ? "webgpu" : "cpu";
     pipelinePromise = pipeline(process.env.MODEL_TASK, process.env.MODEL_NAME, {
-      device: gpuDevice,
+      device: selectedDevice,
     });
   } catch (error) {
-    // if 'webgpu' fails, fallback to 'wasm' (CPU)
-    console.error(
-      "Failed to initialize pipeline with 'webgpu', trying fallback...",
-    );
-    try {
-      let cpuDevice = "wasm";
-      pipelinePromise = pipeline(
-        process.env.MODEL_TASK,
-        process.env.MODEL_NAME,
-        {
-          device: cpuDevice,
-        },
-      );
-    } catch (error) {
-      pipelinePromise = null;
-      console.error("Failed to initialize pipeline:", error);
-      throw error;
-    }
+    pipelinePromise = null;
+    console.error("Failed to initialize pipeline:", error);
+    throw error;
   }
 
   return pipelinePromise;

@@ -19,7 +19,7 @@ export const ingestToMilvus = async (
     format:
       "Ingesting |" +
       "{bar}" +
-      "| {percentage}% || {value}/{total} Objects || Failures: {fails} ETA: {eta}s",
+      "| {percentage}% || {value}/{total} Objects || Failures: {fails} || ETA: {eta}s",
     barCompleteChar: "\u2588",
     barIncompleteChar: "\u2591",
     hideCursor: true,

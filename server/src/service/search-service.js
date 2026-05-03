@@ -1,26 +1,28 @@
+import { getMilvusClient } from "../config/milvus-client.js";
 import { getPipelineInstance } from "./embedding-service.js";
 
+const milvusClient = await getMilvusClient();
+const pipeline = await getPipelineInstance();
+const ALIAS = process.env.MILVUS_ALIAS
+
 export const getSearchResults = async (
-  client,
   term,
-  collectionName,
   limit = 10,
   filterExpr = "",
 ) => {
-  const pipeline = await getPipelineInstance();
 
   const encodedTerm = await pipeline(term, {
     pooling: "mean",
     normalize: true,
   });
 
-  const res = await client.search({
-    collection_name: collectionName,
+  const results = await milvusClient.search({
+    collection_name: ALIAS,
     data: [...encodedTerm.data],
     limit: limit,
     filters: filterExpr,
     output_fields: ["*"],
   });
 
-  return res.results.map((result) => result.headline);
+  return results
 };

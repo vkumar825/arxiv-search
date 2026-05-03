@@ -1,5 +1,7 @@
 import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 
+process.loadEnvFile();
+
 let clientPromise = null;
 
 export const getMilvusClient = async () => {

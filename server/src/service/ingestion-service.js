@@ -1,6 +1,7 @@
-import { getPipelineInstance, getEmbeddedObjs } from "./embedding-service.js";
+import { getEmbeddedObjs } from "./embedding-service.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
+import { getPipelineInstance } from "../config/pipeline.js";
 
 export const ingestToMilvus = async (
   client,

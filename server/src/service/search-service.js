@@ -1,16 +1,11 @@
 import { getMilvusClient } from "../config/milvus-client.js";
-import { getPipelineInstance } from "./embedding-service.js";
+import { getPipelineInstance } from "../config/pipeline.js";
 
 const milvusClient = await getMilvusClient();
 const pipeline = await getPipelineInstance();
-const ALIAS = process.env.MILVUS_ALIAS
+const ALIAS = process.env.MILVUS_ALIAS;
 
-export const getSearchResults = async (
-  term,
-  limit = 10,
-  filterExpr = "",
-) => {
-
+export const getSearchResults = async (term, limit = 10, filterExpr = "") => {
   const encodedTerm = await pipeline(term, {
     pooling: "mean",
     normalize: true,
@@ -24,5 +19,5 @@ export const getSearchResults = async (
     output_fields: ["*"],
   });
 
-  return results
+  return results;
 };

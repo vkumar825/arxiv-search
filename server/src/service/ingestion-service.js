@@ -1,11 +1,12 @@
-import { getEmbeddedObjs } from "./embedding-service.js";
+import { getEmbeddedings } from "./embedding-service.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
 import { getPipelineInstance } from "../config/pipeline.js";
+import { loadDataStream } from "../utils/data-loader.js";
+import { retreiveSchemaInfo } from "../models/schema-registry.js";
 
 export const ingestToMilvus = async (
   client,
-  objects,
   collectionName,
   batchSize,
   embedBatchSize,
@@ -14,7 +15,8 @@ export const ingestToMilvus = async (
   let objectsToEmbed = [];
   let batchCount = 0;
   const LOG_INTERVAL = 10;
-  const pipeline = await getPipelineInstance();
+  const objects = await loadDataStream();
+  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE);
 
   const progressBar = new cliProgress.SingleBar({
     format:
@@ -37,8 +39,8 @@ export const ingestToMilvus = async (
       batchCount += 1;
       progressBar.increment(data.length);
 
-      // keep track of milestone, every 10k batches, and final batch is excluded
-      if (batchCount % LOG_INTERVAL === 0 && data.length === batchSize) {
+      // keep track of milestone, every 10k batches
+      if (batchCount % LOG_INTERVAL === 0) {
         logger.info(
           { processed: batchCount * batchSize },
           "Reached ingestion milestone",
@@ -81,25 +83,34 @@ export const ingestToMilvus = async (
   };
 
   try {
-    for (const obj of objects) {
-      objectsToEmbed.push(obj);
+    for await (const obj of objects) {
+      objectsToEmbed.push(new SelectedSchema(obj));
 
       if (objectsToEmbed.length >= embedBatchSize) {
-        const embeddedObjs = await getEmbeddedObjs(pipeline, objectsToEmbed);
-        batch.push(...embeddedObjs);
-        objectsToEmbed = []; // reset array to embed the next subset
+        const texts = objectsToEmbed.map((obj) => obj.text);
+        const vectors = await getEmbeddedings(texts);
 
-        if (batch.length >= batchSize) {
-          await batchIngest(batch);
-          batch = []; // reset array for next batch
-        }
+        vectors.forEach((vec, i) => {
+          objectsToEmbed[i].vector = vec;
+        });
+
+        batch.push(...objectsToEmbed.map((doc) => doc.object));
+        objectsToEmbed = []; // reset array to embed the next batch
+      }
+
+      if (batch.length >= batchSize) {
+        await batchIngest(batch);
+        batch = []; // reset array for next batch
       }
     }
-
     // embed any remaining objects in objectsToEmbed that didn't reach embedBatchSize
     if (objectsToEmbed.length > 0) {
-      const leftoverEmbeds = await getEmbeddedObjs(pipeline, objectsToEmbed);
-      batch.push(...leftoverEmbeds);
+      const texts = objectsToEmbed.map((obj) => obj.text);
+      const vectors = await getEmbeddedings(texts);
+      vectors.forEach((vec, i) => {
+        objectsToEmbed[i].vector = vec;
+      });
+      batch.push(...objectsToEmbed.map((doc) => doc.object));
     }
 
     if (batch.length > 0) {

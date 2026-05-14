@@ -1,34 +1,20 @@
-import crypto from "crypto";
+import { getPipelineInstance } from "../config/pipeline.js";
 
-export const getEmbeddedObjs = async (pipeline, objects) => {
-  const texts = objects.map((obj) => obj.short_description);
-  const embeddedObjs = [];
+export const getEmbeddedings = async (texts) => {
+  const pipeline = await getPipelineInstance();
 
-  const output = await pipeline(texts, {
+  const outputs = await pipeline(texts, {
     pooling: "mean",
     normalize: true,
   });
 
-  const embeddings = output.tolist();
+  const embeddings = outputs.tolist();
 
   if (embeddings.length !== texts.length) {
     throw new Error(
-      `Embedding mismatch: Got ${embeddings.length} embeddings for ${objects.length} texts.`,
+      `Embedding mismatch: Got ${embeddings.length} embeddings for ${texts.length} texts.`,
     );
   }
 
-  const createId = (headline) => {
-    return crypto.createHash("sha256").update(headline).digest("hex");
-  };
-
-  for (let i = 0; i < objects.length; i++) {
-    embeddedObjs.push({
-      id: createId(objects[i].headline),
-      headline: objects[i].headline,
-      vector: embeddings[i],
-      category: objects[i].category,
-    });
-  }
-
-  return embeddedObjs;
+  return embeddings;
 };

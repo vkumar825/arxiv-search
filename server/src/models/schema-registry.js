@@ -1,8 +1,8 @@
-import { SandboxSchema, SandboxIndexParams } from "./sandbox-schema.js";
+import { SandboxSchema } from "./milvus-schema.js";
 
 export const retreiveSchemaInfo = (schemaType) => {
   switch (schemaType) {
     case "sandbox":
-      return [SandboxSchema[0], SandboxIndexParams[0]];
+      return SandboxSchema;
   }
 };

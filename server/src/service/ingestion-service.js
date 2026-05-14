@@ -14,6 +14,7 @@ export const ingestToMilvus = async (
   let batch = [];
   let objectsToEmbed = [];
   let batchCount = 0;
+  const seenIds = new Set(); // keep track of ids already processed
   const LOG_INTERVAL = 10;
   const objects = await loadDataStream();
   const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE);
@@ -84,7 +85,15 @@ export const ingestToMilvus = async (
 
   try {
     for await (const obj of objects) {
-      objectsToEmbed.push(new SelectedSchema(obj));
+      const schemaInstance = new SelectedSchema(obj);
+      const currentId = schemaInstance.id;
+      if (seenIds.has(currentId)) {
+        progressBar.increment(1);
+        continue;
+      }
+      seenIds.add(currentId);
+
+      objectsToEmbed.push(schemaInstance);
 
       if (objectsToEmbed.length >= embedBatchSize) {
         const texts = objectsToEmbed.map((obj) => obj.text);

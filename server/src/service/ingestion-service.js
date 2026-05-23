@@ -1,4 +1,4 @@
-import { getEmbeddedings } from "./embedding-service.js";
+import { getEmbeddings } from "./embedding-service.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
 import { getPipelineInstance } from "../config/pipeline.js";
@@ -97,7 +97,7 @@ export const ingestToMilvus = async (
 
       if (objectsToEmbed.length >= embedBatchSize) {
         const texts = objectsToEmbed.map((obj) => obj.text);
-        const vectors = await getEmbeddedings(texts);
+        const vectors = await getEmbeddings(texts);
 
         vectors.forEach((vec, i) => {
           objectsToEmbed[i].vector = vec;
@@ -115,7 +115,7 @@ export const ingestToMilvus = async (
     // embed any remaining objects in objectsToEmbed that didn't reach embedBatchSize
     if (objectsToEmbed.length > 0) {
       const texts = objectsToEmbed.map((obj) => obj.text);
-      const vectors = await getEmbeddedings(texts);
+      const vectors = await getEmbeddings(texts);
       vectors.forEach((vec, i) => {
         objectsToEmbed[i].vector = vec;
       });

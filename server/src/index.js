@@ -23,13 +23,12 @@ const milvusClient = await getMilvusClient();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// use EJS templating engine
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-
 app.use("/api/v1", searchRouter);
 
-app.use(express.static(path.join(__dirname, "public")));
+app.get('/', (req, res) => {
+  res.json({ message: "API is running. Use /api/v1/search?q=yourterm to search." });
+});
+
 
 app.listen(EXPRESS_PORT, () => {
   console.log(`Server is running on http://localhost:${EXPRESS_PORT}`);

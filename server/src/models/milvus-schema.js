@@ -43,12 +43,12 @@ export class SandboxSchema extends BaseSchema {
   }
 
   createId(data) {
-    const uniqueId = [
-      data.headline,
-      data.links,
-      data.category,
-    ].join("|");
+    const uniqueId = [data.headline, data.links, data.category].join("|");
     return crypto.createHash("sha256").update(uniqueId).digest("hex");
+  }
+
+  static get filterExpression() {
+    return 'category == "%s"';
   }
 
   // Schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset)

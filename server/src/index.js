@@ -1,54 +1,34 @@
 #!/usr/bin/env node
 
+import express from "express";
 import { fileURLToPath } from "url";
-import { Command } from "commander";
-import { getSearchResults } from "./service/search-service.js";
-import { runMilvusClient } from "./config/milvus-client.js";
+import { dirname } from "path";
+import path from "node:path";
+import { searchRouter } from "./routes/search-route.js";
+import { getMilvusClient } from "./config/milvus-client.js";
 
 process.loadEnvFile();
 
-const isMain = process.argv[1] == fileURLToPath(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-if (isMain) {
-  (async () => {
-    const program = new Command();
+const EXPRESS_PORT = process.env.EXPRESS_PORT || 3000;
+const app = express();
 
-    program
-      .name("search-cli")
-      .description("Search CLI tool for searching the Milvus vector database");
+// initialize milvusClient
+const milvusClient = await getMilvusClient();
 
-    const search = program
-      .command("search <term> <collectionName>")
-      .description("search for a term and retrieve results")
-      .option("-l, --limit <number>", "number of results to retrieve", 10)
-      .option(
-        "-c, --category <name>",
-        "filter results by a specific category name",
-      );
+// use built-in Express.js middlewares
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-    const options = search.opts();
+app.use("/api/v1", searchRouter);
 
-    search.action(
-      runMilvusClient(async (client, term, collectionName, options) => {
-        const filterExpr = options.category ? `category == "${category}"` : "";
+app.get('/', (req, res) => {
+  res.json({ message: "API is running. Use /api/v1/search?q=yourterm to search." });
+});
 
-        const results = await getSearchResults(
-          client,
-          term,
-          collectionName,
-          parseInt(options.limit),
-          filterExpr,
-        );
 
-        console.table(results);
-        
-      }),
-    );
-
-    try {
-      await program.parseAsync();
-    } catch (error) {
-      console.error("Failed to run Search CLI:", error);
-    }
-  })();
-}
+app.listen(EXPRESS_PORT, () => {
+  console.log(`Server is running on http://localhost:${EXPRESS_PORT}`);
+});

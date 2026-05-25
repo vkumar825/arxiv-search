@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from "url";
-import { DataType } from "@zilliz/milvus2-sdk-node";
 import { Command } from "commander";
-import csv from "csvtojson";
 import {
   getMilvusClient,
   runMilvusClient,
   closeMilvusClient,
 } from "../config/milvus-client.js";
 import { ingestToMilvus } from "../service/ingestion-service.js";
+import { retreiveSchemaInfo } from "../models/schema-registry.js";
 
 process.loadEnvFile();
 
@@ -119,53 +118,13 @@ const createMilvusCollection = async (client, name) => {
     return;
   }
 
-  // schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset)
-  const schema = [
-    {
-      name: "id",
-      data_type: DataType.VarChar,
-      max_length: 64,
-      is_primary_key: true,
-    },
-    {
-      name: "vector",
-      data_type: DataType.FloatVector,
-      dim: 384,
-    },
-    {
-      name: "headline",
-      data_type: DataType.VarChar,
-      max_length: 256,
-    },
-    {
-      name: "category",
-      data_type: DataType.VarChar,
-      max_length: 64,
-      is_partition_key: true,
-    },
-  ];
-
-  const index_params = [
-    {
-      field_name: "id",
-      index_type: "AUTOINDEX",
-    },
-    {
-      field_name: "vector",
-      index_type: "AUTOINDEX",
-      metric_type: "COSINE",
-    },
-    {
-      field_name: "category",
-      index_type: "AUTOINDEX",
-    },
-  ];
+  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE);
 
   try {
     await client.createCollection({
       collection_name: name,
-      schema: schema,
-      index_params: index_params,
+      schema: SelectedSchema.schema,
+      index_params: SelectedSchema.indexParams,
     });
     console.log(`Successfully created Milvus collection: ${name}`);
   } catch (error) {
@@ -291,11 +250,8 @@ if (isMain) {
 
     ingest.action(
       runMilvusClient(async (client, collectionName, options) => {
-        const objects = await csv().fromFile(process.env.DATASET_PATH);
-
         await ingestToMilvus(
           client,
-          objects,
           collectionName,
           parseInt(options.batchSize, 10),
           parseInt(options.embedBatchSize, 10),

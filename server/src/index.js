@@ -6,7 +6,6 @@ import { dirname } from "path";
 import path from "node:path";
 import { searchRouter } from "./routes/search-route.js";
 import { getMilvusClient } from "./config/milvus-client.js";
-import ejs from "ejs";
 
 process.loadEnvFile();
 

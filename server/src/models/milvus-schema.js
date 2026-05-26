@@ -45,8 +45,8 @@ export class SandboxSchema extends BaseSchema {
   sanitizeCategory(category) {
     let sanitizedCategory = category
       .toLowerCase()
-      .replace(" ", "-")
-      .replace("&", "and");
+      .replaceAll("&", "and")
+      .replaceAll(" ", "-");
 
     return sanitizedCategory;
   }

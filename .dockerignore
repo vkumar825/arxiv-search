@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+node_modules/
+npm-debug.log
+
+dist/
+build/
+*.log
+
+Dockerfile*
+docker-compose*
+.dockerignore
+.vscode/
+
+.env
+.env.example

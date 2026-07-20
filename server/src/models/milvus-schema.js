@@ -24,7 +24,7 @@ export class SandboxSchema extends BaseSchema {
     super();
     this.id = this.createId(data);
     this.title = data.headline;
-    this.category = data.category;
+    this.category = this.sanitizeCategory(data.category);
     this._text = data.short_description; // using underscore to avoid naming conflict with the getter
   }
 
@@ -40,6 +40,15 @@ export class SandboxSchema extends BaseSchema {
 
   get text() {
     return this._text;
+  }
+
+  sanitizeCategory(category) {
+    let sanitizedCategory = category
+      .toLowerCase()
+      .replaceAll("&", "and")
+      .replaceAll(" ", "-");
+
+    return sanitizedCategory;
   }
 
   createId(data) {

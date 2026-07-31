@@ -1,6 +1,6 @@
-import { pipeline } from "@huggingface/transformers";
+import { pipeline, PipelineType } from "@huggingface/transformers";
 
-let pipelinePromise = null;
+let pipelinePromise: Promise<any> | null = null;
 
 export const getPipelineInstance = async () => {
   if (pipelinePromise) {
@@ -8,8 +8,8 @@ export const getPipelineInstance = async () => {
   }
 
   try {
-    let selectedDevice = process.env.USE_GPU === "true" ? "webgpu" : "cpu";
-    pipelinePromise = pipeline(process.env.MODEL_TASK, process.env.MODEL_NAME, {
+    let selectedDevice: any = process.env.USE_GPU === "true" ? "webgpu" : "cpu";
+    pipelinePromise = pipeline(process.env.MODEL_TASK as PipelineType, process.env.MODEL_NAME as string, {
       device: selectedDevice,
     });
   } catch (error) {

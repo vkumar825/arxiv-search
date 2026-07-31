@@ -2,7 +2,7 @@ import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 
 process.loadEnvFile();
 
-let clientPromise = null;
+let clientPromise: Promise<MilvusClient> | null = null;
 
 export const getMilvusClient = async () => {
   if (clientPromise) {
@@ -12,7 +12,7 @@ export const getMilvusClient = async () => {
   clientPromise = (async () => {
     try {
       const client = new MilvusClient({
-        address: process.env.MILVUS_ADDRESS,
+        address: process.env.MILVUS_ADDRESS as string,
         token: process.env.MILVUS_TOKEN,
       });
 
@@ -36,8 +36,8 @@ export const getMilvusClient = async () => {
 };
 
 export const runMilvusClient =
-  (command) =>
-  async (...args) => {
+  (command: (client: MilvusClient, ...args: any[]) => Promise<void>) =>
+  async (...args: any[]) => {
     const client = await getMilvusClient();
 
     try {

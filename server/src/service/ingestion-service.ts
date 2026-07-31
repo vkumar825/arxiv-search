@@ -1,4 +1,6 @@
 import { getEmbeddings } from "./embedding-service.js";
+import { MilvusClient } from "@zilliz/milvus2-sdk-node";
+import { BaseSchema } from "../models/milvus-schema.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
 import { getPipelineInstance } from "../config/pipeline.js";
@@ -6,18 +8,18 @@ import { loadDataStream } from "../utils/data-loader.js";
 import { retreiveSchemaInfo } from "../models/schema-registry.js";
 
 export const ingestToMilvus = async (
-  client,
-  collectionName,
-  batchSize,
-  embedBatchSize,
+  client: MilvusClient,
+  collectionName: string,
+  batchSize: number,
+  embedBatchSize: number,
 ) => {
-  let batch = [];
-  let objectsToEmbed = [];
+  let batch: any[] = [];
+  let objectsToEmbed: BaseSchema[] = [];
   let batchCount = 0;
-  const seenIds = new Set(); // keep track of ids already processed
+  const seenIds = new Set<string>(); // keep track of ids already processed
   const LOG_INTERVAL = 10;
-  const objects = await loadDataStream();
-  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE);
+  const objects: any = await loadDataStream();
+  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE as string);
 
   const progressBar = new cliProgress.SingleBar({
     format:
@@ -31,7 +33,7 @@ export const ingestToMilvus = async (
 
   progressBar.start(objects.length, 0, { fails: 0 });
 
-  const batchIngest = async (data) => {
+  const batchIngest = async (data: any[]) => {
     try {
       await client.upsert({
         collection_name: collectionName,
@@ -61,8 +63,7 @@ export const ingestToMilvus = async (
         } catch (error) {
           failCount++;
           logger.error(
-            error,
-            { headline: obj.headline, batch: batchCount },
+            { err: error, headline: obj.headline, batch: batchCount },
             "Failed to ingest object",
           );
         } finally {
@@ -96,14 +97,14 @@ export const ingestToMilvus = async (
       objectsToEmbed.push(schemaInstance);
 
       if (objectsToEmbed.length >= embedBatchSize) {
-        const texts = objectsToEmbed.map((obj) => obj.text);
+        const texts = objectsToEmbed.map((obj: BaseSchema) => obj.text);
         const vectors = await getEmbeddings(texts);
 
         vectors.forEach((vec, i) => {
           objectsToEmbed[i].vector = vec;
         });
 
-        batch.push(...objectsToEmbed.map((doc) => doc.object));
+        batch.push(...objectsToEmbed.map((doc: BaseSchema) => doc.object));
         objectsToEmbed = []; // reset array to embed the next batch
       }
 
@@ -114,12 +115,12 @@ export const ingestToMilvus = async (
     }
     // embed any remaining objects in objectsToEmbed that didn't reach embedBatchSize
     if (objectsToEmbed.length > 0) {
-      const texts = objectsToEmbed.map((obj) => obj.text);
+      const texts = objectsToEmbed.map((obj: BaseSchema) => obj.text);
       const vectors = await getEmbeddings(texts);
       vectors.forEach((vec, i) => {
         objectsToEmbed[i].vector = vec;
       });
-      batch.push(...objectsToEmbed.map((doc) => doc.object));
+      batch.push(...objectsToEmbed.map((doc: BaseSchema) => doc.object));
     }
 
     if (batch.length > 0) {

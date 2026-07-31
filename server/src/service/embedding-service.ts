@@ -1,6 +1,6 @@
 import { getPipelineInstance } from "../config/pipeline.js";
 
-export const getEmbeddings = async (texts) => {
+export const getEmbeddings = async (texts: string[]): Promise<number[][]> => {
   const pipeline = await getPipelineInstance();
 
   const outputs = await pipeline(texts, {
@@ -18,4 +18,3 @@ export const getEmbeddings = async (texts) => {
 
   return embeddings;
 };
-

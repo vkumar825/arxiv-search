@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-31
+
+### Changed
+- Migrated to `typescript` ([#22])
+- Changed `README.md` to reflect the latest changes
+- Included a step to use the Express.js Search API in the `README.md`
+
+## Added
+- Set up basic configuration for TypeScript
+
 ## [0.1.0] - 2026-07-19
 
 ### Added

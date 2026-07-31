@@ -5,7 +5,7 @@ import fs from "node:fs";
 process.loadEnvFile();
 
 export const loadDataStream = async () => {
-  const datasetPath = process.env.DATASET_PATH;
+  const datasetPath = process.env.DATASET_PATH as string;
   const ext = path.extname(datasetPath);
 
   if (ext === ".csv") {

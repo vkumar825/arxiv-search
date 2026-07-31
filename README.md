@@ -47,29 +47,7 @@ Follow these steps to get the project up and running on your local machine.
 
 Once your Milvus database is running and dependencies are installed, you can use the built-in CLI utility to interact with the database, or use the Express API to perform searches. Ensure you run these commands from the **root directory** of the repository (where your `.env` file is located).
 
-### Using the Search API (Express.js)
-
-The project includes an Express.js API to easily query your ingested vector data and return JSON results.
-
-1. **Start the API server:**
-   ```bash
-   npm run dev
-   # or run the entry point directly:
-   npx tsx server/src/index.ts
-   ```
-2. **Make a Search Request:**
-   By default, the server runs on port 3000 (unless configured otherwise in `.env`). You can use `curl` or your browser to make a GET request to the `/api/v1/search` endpoint:
-   ```bash
-   curl "http://localhost:3000/api/v1/search?term=machine+learning&limit=5"
-   ```
-   **Parameters:**
-   - `term`: (Required) The string query to search for.
-   - `limit`: (Optional) The maximum number of results to return (default: 10).
-   - `filter`: (Optional) A categorical filter expression.
-
 ### CLI Commands (milvus-utils.ts)
-
-The project includes a `commander.js` script for managing Milvus resources. 
 
 **View Help:**
 To view the help menu with all available commands and options:
@@ -111,6 +89,24 @@ npx tsx ./server/src/scripts/milvus-utils.ts drop collection <collectionName>
 # Drop an alias
 npx tsx ./server/src/scripts/milvus-utils.ts drop alias <aliasName>
 ```
+
+### Using the Search API (Express.js)
+
+**Start the API server:**
+Run the `index.ts` entry point to start the Express.js server
+```bash
+npx tsx ./server/src/index.ts
+```
+**Make a Search Request:**
+By default, the server runs on port 3000 (unless configured otherwise in `.env`). You can use `curl` or your browser to make a GET request to the `/api/v1/search` endpoint:
+```bash
+curl "http://localhost:3000/api/v1/search?term=machine+learning&limit=5"
+```
+**Parameters:**
+- `term`: (Required) The string query to search for.
+- `limit`: (Optional) The maximum number of results to return (default: 10).
+- `filter`: (Optional) A categorical filter expression.
+
 
 ## Acknowledgements
 

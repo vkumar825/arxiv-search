@@ -23,6 +23,9 @@
     "thrift": "^0.23.0"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/csvtojson": "^1.1.5",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.1.2",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2"

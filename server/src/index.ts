@@ -25,7 +25,7 @@ app.use(express.json());
 app.use("/api/v1", searchRouter);
 
 app.get('/', (req: express.Request, res: express.Response) => {
-  res.json({ message: "API is running. Use /api/v1/search?q=yourterm to search." });
+  res.json({ message: "Arxiv Search API is running. Use /api/v1/search?term=yourterm&limit=10 to search." });
 });
 
 

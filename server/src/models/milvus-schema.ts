@@ -1,26 +1,32 @@
-import { DataType } from "@zilliz/milvus2-sdk-node";
+import { DataType, FieldType } from "@zilliz/milvus2-sdk-node";
 import crypto from "crypto";
 
-class BaseSchema {
-  #vector = null; // using hashtag to set this to private
+export abstract class BaseSchema {
+  #vector: number[] | null = null; // using hashtag to set this to private
 
   constructor() {}
 
-  set vector(vec) {
+  set vector(vec: number[]) {
     this.#vector = vec;
   }
 
-  get vector() {
+  get vector(): number[] | null {
     return this.#vector;
   }
 
-  createId() {
-    throw new Error("Method not implemented for BaseSchema class");
-  }
+  abstract id: string;
+  abstract get text(): string;
+  abstract get object(): Record<string, any>;
+  abstract createId(data: any): string;
 }
 
 export class SandboxSchema extends BaseSchema {
-  constructor(data) {
+  id: string;
+  title: string;
+  category: string;
+  _text: string;
+
+  constructor(data: any) {
     super();
     this.id = this.createId(data);
     this.title = data.headline;
@@ -29,7 +35,7 @@ export class SandboxSchema extends BaseSchema {
   }
 
   // This will be called when adding each object in batches for bulk inserts, or doing individual inserts
-  get object() {
+  get object(): Record<string, any> {
     return {
       id: this.id,
       headline: this.title,
@@ -38,11 +44,11 @@ export class SandboxSchema extends BaseSchema {
     };
   }
 
-  get text() {
+  get text(): string {
     return this._text;
   }
 
-  sanitizeCategory(category) {
+  sanitizeCategory(category: string): string {
     let sanitizedCategory = category
       .toLowerCase()
       .replaceAll("&", "and")
@@ -51,18 +57,18 @@ export class SandboxSchema extends BaseSchema {
     return sanitizedCategory;
   }
 
-  createId(data) {
-    const uniqueId = [data.headline, data.links, data.category].join("|");
+  createId(data: any): string {
+    const uniqueId = [data.headline, data.links || "", data.category].join("|");
     return crypto.createHash("sha256").update(uniqueId).digest("hex");
   }
 
-  static get filterExpression() {
+  static get filterExpression(): string {
     return 'category == "%s"';
   }
 
   // Schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset)
   // Both schema and indexParams getters are used for creating a Milvus Collection
-  static get schema() {
+  static get schema(): FieldType[] {
     return [
       {
         name: "id",
@@ -89,7 +95,7 @@ export class SandboxSchema extends BaseSchema {
     ];
   }
 
-  static get indexParams() {
+  static get indexParams(): any[] {
     return [
       {
         field_name: "id",

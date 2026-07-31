@@ -24,7 +24,7 @@ app.use(express.json());
 
 app.use("/api/v1", searchRouter);
 
-app.get('/', (req, res) => {
+app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: "API is running. Use /api/v1/search?q=yourterm to search." });
 });
 

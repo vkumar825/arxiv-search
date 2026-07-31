@@ -9,10 +9,11 @@ import {
 } from "../config/milvus-client.js";
 import { ingestToMilvus } from "../service/ingestion-service.js";
 import { retreiveSchemaInfo } from "../models/schema-registry.js";
+import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 
 process.loadEnvFile();
 
-const getMilvusCollections = async (client) => {
+const getMilvusCollections = async (client: MilvusClient) => {
   try {
     const res = await client.listCollections();
     return res.data.map((milvusCollection) => ({
@@ -24,7 +25,7 @@ const getMilvusCollections = async (client) => {
   }
 };
 
-const createMilvusAlias = async (client, aliasName, collectionName) => {
+const createMilvusAlias = async (client: MilvusClient, aliasName: string, collectionName: string) => {
   try {
     await client.createAlias({
       collection_name: collectionName,
@@ -39,7 +40,7 @@ const createMilvusAlias = async (client, aliasName, collectionName) => {
   }
 };
 
-const dropMilvusAlias = async (client, aliasName) => {
+const dropMilvusAlias = async (client: MilvusClient, aliasName: string) => {
   try {
     await client.dropAlias({
       alias: aliasName,
@@ -51,7 +52,7 @@ const dropMilvusAlias = async (client, aliasName) => {
   }
 };
 
-const reassignMilvusAlias = async (client, aliasName, collectionName) => {
+const reassignMilvusAlias = async (client: MilvusClient, aliasName: string, collectionName: string) => {
   try {
     await client.alterAlias({
       collection_name: collectionName,
@@ -64,7 +65,7 @@ const reassignMilvusAlias = async (client, aliasName, collectionName) => {
   }
 };
 
-const renameMilvusCollection = async (client, oldName, newName) => {
+const renameMilvusCollection = async (client: MilvusClient, oldName: string, newName: string) => {
   try {
     await client.renameCollection({
       collection_name: oldName,
@@ -79,7 +80,7 @@ const renameMilvusCollection = async (client, oldName, newName) => {
   }
 };
 
-const dropMilvusCollection = async (client, name) => {
+const dropMilvusCollection = async (client: MilvusClient, name: string) => {
   const collections = await getMilvusCollections(client);
 
   if (!collections.some((c) => c.collection_name === name)) {
@@ -110,7 +111,7 @@ const dropMilvusCollection = async (client, name) => {
   }
 };
 
-const createMilvusCollection = async (client, name) => {
+const createMilvusCollection = async (client: MilvusClient, name: string) => {
   const collections = await getMilvusCollections(client);
 
   if (collections.some((c) => c.collection_name === name)) {
@@ -118,7 +119,7 @@ const createMilvusCollection = async (client, name) => {
     return;
   }
 
-  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE);
+  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE as string);
 
   try {
     await client.createCollection({
@@ -240,12 +241,12 @@ if (isMain) {
       .option(
         "-b, --batch-size <number>",
         "number of objects to ingest per batch",
-        1000,
+        "1000",
       )
       .option(
         "-e, --embed-batch-size <number>",
         "number of objects to process per embedding call",
-        128,
+        "128",
       );
 
     ingest.action(

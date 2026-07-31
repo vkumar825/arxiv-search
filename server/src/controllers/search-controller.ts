@@ -1,10 +1,11 @@
+import { Request, Response } from "express";
 import { getSearchResults } from "../service/search-service.js";
 
-export const handleSearchRequest = async (req, res) => {
+export const handleSearchRequest = async (req: Request, res: Response) => {
   try {
-    const term = req.query.term;
-    const limit = parseInt(req.query.limit) || 10;
-    const filter = req.query.filter || "";
+    const term = req.query.term as string;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const filter = (req.query.filter as string) || "";
 
     const searchResults = await getSearchResults(term, limit, filter);
 
@@ -19,7 +20,7 @@ export const handleSearchRequest = async (req, res) => {
       });
       return res.json({ results: sanitizedResults });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };

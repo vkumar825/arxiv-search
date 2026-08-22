@@ -108,6 +108,26 @@ curl "http://localhost:3000/api/v1/search?term=machine+learning&limit=5"
 - `filter`: (Optional) A categorical filter expression.
 
 
+## Testing
+
+This project uses [Vitest](https://vitest.dev/) for unit testing. To run the test suite, ensure your Node dependencies are installed, then run the following from the root directory:
+
+```bash
+npx vitest run
+```
+
+To run tests in watch mode (ideal during development):
+
+```bash
+npx vitest
+```
+
+To run a specific test file, pass the path directly:
+
+```bash
+npx vitest run server/src/models/milvus-schema.test.ts
+```
+
 ## Acknowledgements
 
 Portions of this project were developed in conjunction with Google Gemini (3.1 Pro & Antigravity CLI) for code assistance and debugging. All code, logic, and design were reviewed and supervised by me.

@@ -7,18 +7,19 @@ export const handleSearchRequest = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const filter = (req.query.filter as string) || "";
 
+    if (!term || term === "") {
+      return res.status(400).json({ error: "Search term is required" });
+    }
+
     const searchResults = await getSearchResults(term, limit, filter);
 
     if (req.baseUrl === "/api/v1") {
-      if (!term || term === "") {
-        return res.status(400).json({ error: "Search term is required" });
-      }
       // exclude vector field from the results (because it makes it messy to read)
       const sanitizedResults = searchResults.results.map((item) => {
         const { vector, ...rest } = item;
         return rest;
       });
-      return res.json({ results: sanitizedResults });
+      return res.status(200).json({ results: sanitizedResults });
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message });

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-08-29
+
+### Added
+- Integrated Vitest testing framework (https://github.com/vkumar825/arxiv-search/issues/15)
+- Added unit tests for search controllers, milvus schemas, and embedding services.
+
 ## [0.2.1] - 2026-08-02
 
 ### Changed

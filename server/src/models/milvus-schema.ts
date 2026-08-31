@@ -1,8 +1,12 @@
 import { DataType, FieldType } from "@zilliz/milvus2-sdk-node";
-import crypto from "crypto";
+import crypto from "node:crypto";
+
+process.loadEnvFile();
+
+const MODEL_DIMENSION = Number(process.env.MODEL_DIMENSION) || 384;
 
 export abstract class BaseSchema {
-  #vector: number[] | null = null; // using hashtag to set this to private
+  #vector: number[] | null = null; // Setting vector as a ECMAScript private field
 
   constructor() {}
 
@@ -23,7 +27,7 @@ export class SandboxSchema extends BaseSchema {
   id: string;
   title: string;
   category: string;
-  _text: string;
+  private _text: string;
 
   constructor(data: any) {
     super();
@@ -65,8 +69,7 @@ export class SandboxSchema extends BaseSchema {
     return 'category == "%s"';
   }
 
-  // Schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset)
-  // Both schema and indexParams getters are used for creating a Milvus Collection
+  // Schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset) 
   static get schema(): FieldType[] {
     return [
       {
@@ -78,7 +81,7 @@ export class SandboxSchema extends BaseSchema {
       {
         name: "vector",
         data_type: DataType.FloatVector,
-        dim: 384,
+        dim: MODEL_DIMENSION,
       },
       {
         name: "headline",
@@ -121,7 +124,7 @@ export class ArxivSchema extends BaseSchema {
   doi: string;
   categories: string[];
   authors: string[];
-  _text: string;
+  private _text: string;
 
   constructor(data: any) {
     super();
@@ -135,7 +138,7 @@ export class ArxivSchema extends BaseSchema {
     this._text = data.abstract;
   }
 
-  createId(data: any){
+  createId(data: any): string {
     const uniqueId = [data.title, data.id, data.doi || ""].join(":");
     return crypto.createHash("sha256").update(uniqueId).digest("hex");
   }
@@ -146,11 +149,13 @@ export class ArxivSchema extends BaseSchema {
   get object(): Record<string, any> {
     return {
       id: this.id,
+      arxivId: this.arxivId,
       title: this.title,
       journalRef: this.journalRef,
       doi: this.doi,
       categories: this.categories,
       authors: this.authors,
+      abstract: this._text,
       vector: this.vector,
     };
   }
@@ -164,36 +169,50 @@ export class ArxivSchema extends BaseSchema {
         is_primary_key: true,
       },
       {
+        name: "arxivId",
+        data_type: DataType.VarChar,
+        max_length: 32,
+      },
+      {
         name: "title",
         data_type: DataType.VarChar,
-        max_length: 256,
+        max_length: 512,
       },
       {
         name: "journalRef",
         data_type: DataType.VarChar,
-        max_length: 256,
+        max_length: 512,
+        nullable: true,
       },
       {
         name: "doi",
         data_type: DataType.VarChar,
         max_length: 256,
+        nullable: true,
       },
       {
         name: "categories",
         data_type: DataType.Array,
-        max_length: 128,
-        is_partition_key: true,
+        element_type: DataType.VarChar,
+        max_capacity: 32,
+        max_length: 64,
       },
       {
         name: "authors",
         data_type: DataType.Array,
+        element_type: DataType.VarChar,
+        max_capacity: 512,
         max_length: 128,
-        is_partition_key: true,
+      },
+      {
+        name: "abstract",
+        data_type: DataType.VarChar,
+        max_length: 8192,
       },
       {
         name: "vector",
         data_type: DataType.FloatVector,
-        dim: 384,
+        dim: MODEL_DIMENSION,
       },
     ];
   }

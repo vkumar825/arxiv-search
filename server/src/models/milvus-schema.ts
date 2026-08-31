@@ -17,7 +17,6 @@ export abstract class BaseSchema {
   abstract id: string;
   abstract get text(): string;
   abstract get object(): Record<string, any>;
-  abstract createId(data: any): string;
 }
 
 export class SandboxSchema extends BaseSchema {
@@ -108,6 +107,110 @@ export class SandboxSchema extends BaseSchema {
       },
       {
         field_name: "category",
+        index_type: "AUTOINDEX",
+      },
+    ];
+  }
+}
+
+export class ArxivSchema extends BaseSchema {
+  id: string;
+  arxivId: string;
+  title: string;
+  journalRef: string;
+  doi: string;
+  categories: string[];
+  authors: string[];
+  _text: string;
+
+  constructor(data: any) {
+    super();
+    this.id = this.createId(data);
+    this.arxivId = data.id;
+    this.title = data.title;
+    this.journalRef = data["journal-ref"];
+    this.doi = data.doi;
+    this.categories = data.categories;
+    this.authors = data.authors;
+    this._text = data.abstract;
+  }
+
+  createId(data: any){
+    const uniqueId = [data.title, data.id, data.doi || ""].join(":");
+    return crypto.createHash("sha256").update(uniqueId).digest("hex");
+  }
+
+  get text(): string {
+    return this._text;
+  }
+  get object(): Record<string, any> {
+    return {
+      id: this.id,
+      title: this.title,
+      journalRef: this.journalRef,
+      doi: this.doi,
+      categories: this.categories,
+      authors: this.authors,
+      vector: this.vector,
+    };
+  }
+  // Milvus schema designed for this dataset (https://www.kaggle.com/datasets/Cornell-University/arxiv)
+  static get schema(): FieldType[] {
+    return [
+      {
+        name: "id",
+        data_type: DataType.VarChar,
+        max_length: 64,
+        is_primary_key: true,
+      },
+      {
+        name: "title",
+        data_type: DataType.VarChar,
+        max_length: 256,
+      },
+      {
+        name: "journalRef",
+        data_type: DataType.VarChar,
+        max_length: 256,
+      },
+      {
+        name: "doi",
+        data_type: DataType.VarChar,
+        max_length: 256,
+      },
+      {
+        name: "categories",
+        data_type: DataType.Array,
+        max_length: 128,
+        is_partition_key: true,
+      },
+      {
+        name: "authors",
+        data_type: DataType.Array,
+        max_length: 128,
+        is_partition_key: true,
+      },
+      {
+        name: "vector",
+        data_type: DataType.FloatVector,
+        dim: 384,
+      },
+    ];
+  }
+
+  static get indexParams(): any[] {
+    return [
+      {
+        field_name: "id",
+        index_type: "AUTOINDEX",
+      },
+      {
+        field_name: "vector",
+        index_type: "AUTOINDEX",
+        metric_type: "COSINE",
+      },
+      {
+        field_name: "categories",
         index_type: "AUTOINDEX",
       },
     ];

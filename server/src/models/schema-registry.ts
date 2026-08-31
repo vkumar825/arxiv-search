@@ -1,4 +1,4 @@
-import { SandboxSchema, BaseSchema } from "./milvus-schema.js";
+import { SandboxSchema, BaseSchema, ArxivSchema } from "./milvus-schema.js";
 
 export interface SchemaConstructor {
   new (data: any): BaseSchema;
@@ -9,6 +9,7 @@ export interface SchemaConstructor {
 
 const schemaRegistry: Record<string, SchemaConstructor> = {
   sandbox: SandboxSchema,
+  arxiv: ArxivSchema
 };
 
 export const retreiveSchemaInfo = (schemaType: string): SchemaConstructor => {

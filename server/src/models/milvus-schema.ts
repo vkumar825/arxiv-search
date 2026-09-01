@@ -69,7 +69,7 @@ export class SandboxSchema extends BaseSchema {
     return 'category == "%s"';
   }
 
-  // Schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset) 
+  // Schema designed for this dataset (https://www.kaggle.com/datasets/setseries/news-category-dataset)
   static get schema(): FieldType[] {
     return [
       {
@@ -124,6 +124,7 @@ export class ArxivSchema extends BaseSchema {
   doi: string;
   categories: string[];
   authors: string[];
+  versions: string[];
   private _text: string;
 
   constructor(data: any) {
@@ -135,6 +136,7 @@ export class ArxivSchema extends BaseSchema {
     this.doi = data.doi;
     this.categories = data.categories;
     this.authors = data.authors;
+    this.versions = data.versions;
     this._text = data.abstract;
   }
 
@@ -155,6 +157,7 @@ export class ArxivSchema extends BaseSchema {
       doi: this.doi,
       categories: this.categories,
       authors: this.authors,
+      versions: this.versions,
       abstract: this._text,
       vector: this.vector,
     };
@@ -203,6 +206,13 @@ export class ArxivSchema extends BaseSchema {
         element_type: DataType.VarChar,
         max_capacity: 512,
         max_length: 128,
+      },
+      {
+        name: "versions",
+        data_type: DataType.Array,
+        element_type: DataType.VarChar,
+        max_capacity: 32,
+        max_length: 64,
       },
       {
         name: "abstract",

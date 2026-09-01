@@ -1,6 +1,6 @@
 import { getPipelineInstance } from "../config/pipeline.js";
 
-export const getEmbeddings = async (texts: string[]): Promise<number[][]> => {
+export const createEmbeddings = async (texts: string[]): Promise<number[][]> => {
   const pipeline = await getPipelineInstance();
 
   const outputs = await pipeline(texts, {

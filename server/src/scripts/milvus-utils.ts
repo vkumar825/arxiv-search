@@ -2,14 +2,10 @@
 
 import { fileURLToPath } from "url";
 import { Command } from "commander";
-import {
-  getMilvusClient,
-  runMilvusClient,
-  closeMilvusClient,
-} from "../config/milvus-client.js";
+import { runMilvusClient } from "../config/milvus-client.js";
 import { ingestToMilvus } from "../service/ingestion-service.js";
-import { retreiveSchemaInfo } from "../models/schema-registry.js";
 import { MilvusClient } from "@zilliz/milvus2-sdk-node";
+import { ArxivSchema } from "../models/arxiv-schema.js";
 
 process.loadEnvFile();
 
@@ -25,7 +21,11 @@ const getMilvusCollections = async (client: MilvusClient) => {
   }
 };
 
-const createMilvusAlias = async (client: MilvusClient, aliasName: string, collectionName: string) => {
+const createMilvusAlias = async (
+  client: MilvusClient,
+  aliasName: string,
+  collectionName: string,
+) => {
   try {
     await client.createAlias({
       collection_name: collectionName,
@@ -52,7 +52,11 @@ const dropMilvusAlias = async (client: MilvusClient, aliasName: string) => {
   }
 };
 
-const reassignMilvusAlias = async (client: MilvusClient, aliasName: string, collectionName: string) => {
+const reassignMilvusAlias = async (
+  client: MilvusClient,
+  aliasName: string,
+  collectionName: string,
+) => {
   try {
     await client.alterAlias({
       collection_name: collectionName,
@@ -65,7 +69,11 @@ const reassignMilvusAlias = async (client: MilvusClient, aliasName: string, coll
   }
 };
 
-const renameMilvusCollection = async (client: MilvusClient, oldName: string, newName: string) => {
+const renameMilvusCollection = async (
+  client: MilvusClient,
+  oldName: string,
+  newName: string,
+) => {
   try {
     await client.renameCollection({
       collection_name: oldName,
@@ -119,13 +127,11 @@ const createMilvusCollection = async (client: MilvusClient, name: string) => {
     return;
   }
 
-  const SelectedSchema = retreiveSchemaInfo(process.env.SCHEMA_TYPE as string);
-
   try {
     await client.createCollection({
       collection_name: name,
-      schema: SelectedSchema.schema,
-      index_params: SelectedSchema.indexParams,
+      schema: ArxivSchema.schema,
+      index_params: ArxivSchema.indexParams,
     });
     console.log(`Successfully created Milvus collection: ${name}`);
   } catch (error) {

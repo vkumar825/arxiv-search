@@ -1,6 +1,6 @@
 import { getEmbeddings } from "./embedding-service.js";
 import { MilvusClient } from "@zilliz/milvus2-sdk-node";
-import { BaseSchema } from "../models/milvus-schema.js";
+import { BaseSchema } from "../models/arxiv-schema.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
 import { getPipelineInstance } from "../config/pipeline.js";

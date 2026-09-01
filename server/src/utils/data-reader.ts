@@ -1,5 +1,3 @@
-import path from "node:path";
-import csv from "csvtojson";
 import fs from "node:fs";
 import readline from "node:readline";
 

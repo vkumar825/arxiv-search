@@ -5,25 +5,8 @@ process.loadEnvFile();
 
 const MODEL_DIMENSION = Number(process.env.MODEL_DIMENSION) || 384;
 
-export abstract class BaseSchema {
-  #vector: number[] | null = null; // Setting vector as a ECMAScript private field
-
-  constructor() {}
-
-  set vector(vec: number[]) {
-    this.#vector = vec;
-  }
-
-  get vector(): number[] | null {
-    return this.#vector;
-  }
-
-  abstract id: string;
-  abstract get text(): string;
-  abstract get object(): Record<string, any>;
-}
-
-export class ArxivSchema extends BaseSchema {
+export class ArxivSchema {
+  #vector: number[] | null = null;
   id: string;
   arxivId: string;
   title: string;
@@ -34,8 +17,15 @@ export class ArxivSchema extends BaseSchema {
   versions: string[];
   private _text: string;
 
+  set vector(vec: number[]) {
+    this.#vector = vec;
+  }
+
+  get vector(): number[] | null {
+    return this.#vector;
+  }
+
   constructor(data: any) {
-    super();
     this.id = this.createId(data);
     this.arxivId = data.id;
     this.title = data.title;

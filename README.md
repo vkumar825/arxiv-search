@@ -79,6 +79,7 @@ npx tsx ./server/src/scripts/milvus-utils.ts ingest <collectionName>
 *Optional Flags:*
 - `-b, --batch-size <number>`: Number of objects to ingest per batch (default: 1000).
 - `-e, --embed-batch-size <number>`: Number of objects to process per embedding call (default: 128).
+- `-l, --limit <number>`: Maximum number of objects to ingest (useful for testing/development).
 
 **Drop Resources:**
 Remove a collection or an alias from the database:

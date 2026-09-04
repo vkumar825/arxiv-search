@@ -198,7 +198,6 @@ if (isMain) {
 
     list.action(
       runMilvusClient(async (client) => {
-        // get a list of both collection, and their associated aliases if present
         const collections = await getMilvusCollections(client);
         const aliasMap = new Map();
 
@@ -253,15 +252,30 @@ if (isMain) {
         "-e, --embed-batch-size <number>",
         "number of objects to process per embedding call",
         "128",
+      )
+      .option(
+        "-l, --limit <number>",
+        "maximum number of objects to ingest",
       );
 
     ingest.action(
       runMilvusClient(async (client, collectionName, options) => {
+        const batchSize = parseInt(options.batchSize, 10);
+        const embedBatchSize = parseInt(options.embedBatchSize, 10);
+        const limit = options.limit ? parseInt(options.limit, 10) : undefined;
+
+        if (limit !== undefined && limit < batchSize) {
+          throw new Error(
+            `Limit (${limit}) cannot be less than batch size (${batchSize})`,
+          );
+        }
+
         await ingestToMilvus(
           client,
           collectionName,
-          parseInt(options.batchSize, 10),
-          parseInt(options.embedBatchSize, 10),
+          batchSize,
+          embedBatchSize,
+          limit,
         );
       }),
     );

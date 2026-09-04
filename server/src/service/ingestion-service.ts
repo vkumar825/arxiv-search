@@ -3,27 +3,34 @@ import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 import { ArxivSchema } from "../models/arxiv-schema.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
-import { processJSONLines } from "../utils/data-reader.js";
+import { getTotalLinesCount, processJSONLines } from "../utils/data-manager.js";
 
 export const ingestToMilvus = async (
   client: MilvusClient,
   collectionName: string,
   batchSize: number,
   embedBatchSize: number,
+  limit?: number,
 ) => {
   let batch: Record<string, any>[] = [];
   let objectsToEmbed: ArxivSchema[] = [];
   let batchCount = 0;
+  let processedCount = 0;
   const seenIds = new Set<string>(); // keep track of ids already processed
-  const LOG_INTERVAL = 10;
-  const lineReader = await processJSONLines();
+  const rl = await processJSONLines();
+  const total = limit ?? (await getTotalLinesCount());
 
   const progressBar = new cliProgress.SingleBar({
-    format: "Ingesting | {value} Objects Processed || Failures: {fails}",
+    format:
+      "Ingesting |" +
+      "{bar}" +
+      "| {percentage}% || {value}/{total} Objects || Failures: {fails} || ETA: {eta}s",
+    barCompleteChar: "\u2588",
+    barIncompleteChar: "\u2591",
     hideCursor: true,
   });
 
-  progressBar.start(0, 0, { fails: 0 });
+  progressBar.start(total, 0, { fails: 0 });
 
   const batchIngest = async (data: Record<string, any>[]) => {
     try {
@@ -33,14 +40,6 @@ export const ingestToMilvus = async (
       });
       batchCount += 1;
       progressBar.increment(data.length);
-
-      // keep track of milestone, every 10 batches
-      if (batchCount % LOG_INTERVAL === 0) {
-        logger.info(
-          { processed: batchCount * batchSize },
-          "Reached ingestion milestone",
-        );
-      }
     } catch (error) {
       logger.warn("Failed to ingest batch, retrying them individually...");
       let failCount = 0;
@@ -61,7 +60,7 @@ export const ingestToMilvus = async (
               title: obj.title,
               batch: batchCount,
             },
-            "Failed to ingest document",
+            "Failed to ingest object",
           );
         } finally {
           progressBar.increment(1, { fails: failCount });
@@ -95,7 +94,7 @@ export const ingestToMilvus = async (
   };
 
   try {
-    for await (const line of lineReader) {
+    for await (const line of rl) {
       if (!line.trim()) continue;
 
       const rawData = JSON.parse(line);
@@ -109,6 +108,7 @@ export const ingestToMilvus = async (
       seenIds.add(currentId);
 
       objectsToEmbed.push(schemaInstance);
+      processedCount++;
 
       if (objectsToEmbed.length >= embedBatchSize) {
         await getEmbeddings();
@@ -117,6 +117,10 @@ export const ingestToMilvus = async (
       if (batch.length >= batchSize) {
         await batchIngest(batch);
         batch = []; // reset array for next batch
+      }
+
+      if (limit && processedCount >= limit) {
+        break;
       }
     }
 

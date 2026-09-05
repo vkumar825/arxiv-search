@@ -9,8 +9,8 @@ import StreamZip from "node-stream-zip";
 process.loadEnvFile();
 const datasetPath = process.env.DATASET_PATH as string;
 const datasetUrl = process.env.DATASET_URL as string;
-const KaggleUsername = process.env.KAGGLE_USERNAME;
-const KaggleKey = process.env.KAGGLE_KEY;
+const kaggleUsername = process.env.KAGGLE_USERNAME;
+const kaggleKey = process.env.KAGGLE_KEY;
 
 
 export const fetchDataset = async (): Promise<void> => {
@@ -18,7 +18,7 @@ export const fetchDataset = async (): Promise<void> => {
     return;
   }
 
-  if (!KaggleUsername || !KaggleKey) {
+  if (!kaggleUsername || !kaggleKey) {
     throw new Error("Missing Kaggle credentials");
   }
 
@@ -28,7 +28,7 @@ export const fetchDataset = async (): Promise<void> => {
   }
 
   const zipPath = path.join(targetDir, "arxiv-dataset.zip");
-  const credentials = Buffer.from(`${KaggleUsername}:${KaggleKey}`).toString("base64");
+  const credentials = Buffer.from(`${kaggleUsername}:${kaggleKey}`).toString("base64");
 
   console.log("Downloading arXiv dataset from Kaggle...");
 

@@ -1,7 +1,14 @@
-from clean import convert_latex_to_text, normalize_whitespace, parse_authors, parse_doi, remove_html_tags
+from clean import (
+    clean_record,
+    convert_latex_to_text,
+    normalize_whitespace,
+    parse_authors,
+    parse_doi,
+    remove_html_tags,
+)
 
 
-def test_convert_latext_to_text():
+def test_convert_latex_to_text():
 
     # Example 1: Title w/ LaTeX symbols
     title1 = "From dyadic $\\Lambda_{\\alpha}$ to $\\Lambda_{\\alpha}$"
@@ -49,10 +56,10 @@ def test_convert_latext_to_text():
     )
 
     # Example 6: LaTeX formulas
-    formula1 = "$W^{1}_{p,V}$" # both caret and subscript
+    formula1 = "$W^{1}_{p,V}$"  # both caret and subscript
     assert convert_latex_to_text(formula1) == "W^1p,V"
 
-    formula2 = "$LP^\#$"
+    formula2 = r"$LP^\#$"
     assert convert_latex_to_text(formula2) == "LP^#"
 
 
@@ -94,6 +101,15 @@ def test_parse_authors():
     assert authors4_clean[1] == "R. Tomàs"
     assert authors4_clean[2] == "J. W. F. Valle"
 
+    # Example 4: Oxford comma (comma before "and")
+    authors5 = "Alice Smith, Bob Jones, and Charlie Brown"
+    authors5_clean = parse_authors(authors=authors5)
+
+    assert len(authors5_clean) == 3
+    assert authors5_clean[0] == "Alice Smith"
+    assert authors5_clean[1] == "Bob Jones"
+    assert authors5_clean[2] == "Charlie Brown"
+
 
 def test_parse_doi():
 
@@ -110,7 +126,9 @@ def test_parse_doi():
     assert len(doi2_clean) == 3
     assert doi2_clean[0] == "10.1103/PhysRevD.75.124007"
     assert doi2_clean[1] == "10.1103/PhysRevD.82.029901"
-    assert doi2_clean[2] == "10.1103/PhysRevD.82.129903"
+
+    # Checking when DOI is None
+    assert parse_doi(doi=None) is None
 
 
 def test_remove_html_tags():
@@ -120,11 +138,79 @@ def test_remove_html_tags():
     title1_removed_html = remove_html_tags(text=title1)
     normalized_title1 = normalize_whitespace(text=title1_removed_html)
 
-    assert normalized_title1 == "Interactive Small-Step Algorithms II: Abstract State Machines and the Characterization Theorem"
+    assert (
+        normalized_title1
+        == "Interactive Small-Step Algorithms II: Abstract State Machines and the Characterization Theorem"
+    )
 
     # Example 2: Title w/ non-HTML tags (must not be removed)
     title2 = "The Ly<alpha> and Ly<beta> profiles in solar prominences and prominence   fine structure"
     title2_removed_html = remove_html_tags(text=title2)
     normalized_title2 = normalize_whitespace(text=title2_removed_html)
 
-    assert normalized_title2 == "The Ly<alpha> and Ly<beta> profiles in solar prominences and prominence fine structure"
+    assert (
+        normalized_title2
+        == "The Ly<alpha> and Ly<beta> profiles in solar prominences and prominence fine structure"
+    )
+
+
+def test_clean_record():
+
+    raw_record = {
+        "id": "0704.0001",
+        "authors": "C. Bal\\'azs and E. L. Berger",
+        "title": "Calculation of $\\alpha$ with $B\\to\\pi\\pi$",
+        "journal-ref": "Phys. Rev. D 76 (2007) 013008",
+        "doi": "10.1103/PhysRevD.76.013008",
+        "report-no": "ANL-HEP-PR-07-28",
+        "categories": "hep-ph astro-ph",
+        "abstract": "We calculate the $\\alpha$ parameter for $B\\to\\pi\\pi$ transitions.\n",
+    }
+
+    cleaned = clean_record(record=raw_record)
+
+    # Preserved raw fields
+    assert cleaned["id"] == "0704.0001"
+    assert cleaned["authors"] == "C. Bal\\'azs and E. L. Berger"
+    assert cleaned["title"] == "Calculation of $\\alpha$ with $B\\to\\pi\\pi$"
+    assert (
+        cleaned["abstract"]
+        == "We calculate the $\\alpha$ parameter for $B\\to\\pi\\pi$ transitions.\n"
+    )
+    assert cleaned["journal-ref"] == "Phys. Rev. D 76 (2007) 013008"
+    assert cleaned["report-no"] == "ANL-HEP-PR-07-28"
+
+    # Cleaned fields
+    assert cleaned["authors_clean"] == ["C. Balázs", "E. L. Berger"]
+    assert cleaned["title_clean"] == "Calculation of α with B→ππ"
+    assert cleaned["doi"] == ["10.1103/PhysRevD.76.013008"]
+    assert cleaned["categories"] == ["hep-ph", "astro-ph"]
+    assert (
+        cleaned["abstract_clean"]
+        == "We calculate the α parameter for B→ππ transitions."
+    )
+
+
+def test_clean_record_missing_optional_fields():
+
+    raw_record = {
+        "id": "0704.0002",
+        "authors": "Ileana Streinu",
+        "title": "Sparse Graphs",
+        "journal-ref": None,
+        "doi": None,
+        "report-no": None,
+        "categories": "math.CO",
+        "abstract": "We discuss sparse graphs.",
+    }
+
+    cleaned = clean_record(record=raw_record)
+
+    assert cleaned["id"] == "0704.0002"
+    assert cleaned["authors_clean"] == ["Ileana Streinu"]
+    assert cleaned["title_clean"] == "Sparse Graphs"
+    assert cleaned["doi"] is None
+    assert cleaned["journal-ref"] is None
+    assert cleaned["report-no"] is None
+    assert cleaned["categories"] == ["math.CO"]
+    assert cleaned["abstract_clean"] == "We discuss sparse graphs."

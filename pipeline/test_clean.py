@@ -1,4 +1,4 @@
-from clean import convert_latex_to_text, parse_authors, parse_doi
+from clean import convert_latex_to_text, normalize_whitespace, parse_authors, parse_doi, remove_html_tags
 
 
 def test_convert_latext_to_text():
@@ -47,6 +47,13 @@ def test_convert_latext_to_text():
         "We show that a determinant of Stirling cycle numbers counts unlabeled acyclic single-source automata."
         in cleaned_abstract2
     )
+
+    # Example 6: LaTeX formulas
+    formula1 = "$W^{1}_{p,V}$" # both caret and subscript
+    assert convert_latex_to_text(formula1) == "W^1p,V"
+
+    formula2 = "$LP^\#$"
+    assert convert_latex_to_text(formula2) == "LP^#"
 
 
 def test_parse_authors():
@@ -104,3 +111,20 @@ def test_parse_doi():
     assert doi2_clean[0] == "10.1103/PhysRevD.75.124007"
     assert doi2_clean[1] == "10.1103/PhysRevD.82.029901"
     assert doi2_clean[2] == "10.1103/PhysRevD.82.129903"
+
+
+def test_remove_html_tags():
+
+    # Example 1: Title w/ <br> tag
+    title1 = "Interactive Small-Step Algorithms II: Abstract State Machines and   the<br> Characterization Theorem"
+    title1_removed_html = remove_html_tags(text=title1)
+    normalized_title1 = normalize_whitespace(text=title1_removed_html)
+
+    assert normalized_title1 == "Interactive Small-Step Algorithms II: Abstract State Machines and the Characterization Theorem"
+
+    # Example 2: Title w/ non-HTML tags (must not be removed)
+    title2 = "The Ly<alpha> and Ly<beta> profiles in solar prominences and prominence   fine structure"
+    title2_removed_html = remove_html_tags(text=title2)
+    normalized_title2 = normalize_whitespace(text=title2_removed_html)
+
+    assert normalized_title2 == "The Ly<alpha> and Ly<beta> profiles in solar prominences and prominence fine structure"

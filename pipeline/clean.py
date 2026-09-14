@@ -10,11 +10,20 @@ load_dotenv()
 RAW_DATASET_PATH = os.environ["RAW_DATASET_PATH"]
 CLEANED_DATASET_PATH = os.environ["CLEANED_DATASET_PATH"]
 
-# regex pattern to substitute multiple whitespaces with single whitespace
 MULTIPLE_WHITESPACES_REGEX = re.compile(" +")
 NEWLINE_BETWEEN_CHARS_REGEX = re.compile(r"(?<=\w)\n(?=\w)")
+HTML_REGEX = re.compile(
+    r"</?(?:p|br|div|span|h[1-6]|ul|ol|li|strong|em|img)\b[^>]*>|<a\b[^>]*\bhref\b[^>]*>|</a>"
+)
 
 LATEX_CONVERTER = LatexNodes2Text()
+
+
+def remove_html_tags(text: str):
+
+    removed_html = HTML_REGEX.sub("", text)
+
+    return removed_html.strip()
 
 
 def normalize_whitespace(text: str):
@@ -85,6 +94,7 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
     # title_clean
     record["title"] = MULTIPLE_WHITESPACES_REGEX.sub(" ", record["title"])
     record["title"] = convert_latex_to_text(latex_text=record["title"])
+    record["title"] = remove_html_tags(text=record["title"])
     title_clean = record["title"]
 
     # doi_clean
@@ -95,6 +105,7 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
 
     # abstract_clean
     record["abstract"] = convert_latex_to_text(latex_text=record["abstract"])
+    record["abstract"] = remove_html_tags(text=record["abstract"])
     abstract_clean = record["abstract"]
 
     cleaned_record = {

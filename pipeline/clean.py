@@ -16,7 +16,7 @@ NEWLINE_BETWEEN_CHARS_REGEX = re.compile(r"(?<=\w)\n(?=\w)")
 HTML_REGEX = re.compile(
     r"</?(?:p|br|div|span|h[1-6]|ul|ol|li|strong|em|img)\b[^>]*>|<a\b[^>]*\bhref\b[^>]*>|</a>"
 )
-
+AUTHORS_SPLIT_REGEX = re.compile(r",\s*(?:and\s+)?|\s+and\s+")
 LATEX_CONVERTER = LatexNodes2Text()
 
 
@@ -51,12 +51,7 @@ def parse_doi(doi: str):
 
 
 def parse_authors(authors: str):
-    if "and" in authors and "," in authors:
-        authors_list = re.split(r", | and ", authors)
-    elif "and" in authors:
-        authors_list = authors.split(" and ")
-    else:
-        authors_list = authors.split(",")
+    authors_list = AUTHORS_SPLIT_REGEX.split(authors)
 
     for index, author in enumerate(authors_list):
         authors_list[index] = LATEX_CONVERTER.latex_to_text(author).strip()

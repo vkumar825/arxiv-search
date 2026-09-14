@@ -1,4 +1,4 @@
-from clean import convert_latex_to_text, parse_authors
+from clean import convert_latex_to_text, parse_authors, parse_doi
 
 
 def test_convert_latext_to_text():
@@ -86,3 +86,21 @@ def test_parse_authors():
     assert authors4_clean[0] == "A. Esteban-Pretel"
     assert authors4_clean[1] == "R. Tomàs"
     assert authors4_clean[2] == "J. W. F. Valle"
+
+
+def test_parse_doi():
+
+    doi1 = "10.1364/JOSAA.23.002578 10.1364/JOSAA.32.002407"
+    doi1_clean = parse_doi(doi=doi1)
+
+    assert len(doi1_clean) == 2
+    assert doi1_clean[0] == "10.1364/JOSAA.23.002578"
+    assert doi1_clean[1] == "10.1364/JOSAA.32.002407"
+
+    # Dealing with newline character and multiple whitespaces
+    doi2 = "10.1103/PhysRevD.75.124007 10.1103/PhysRevD.82.029901\n  10.1103/PhysRevD.82.129903"
+    doi2_clean = parse_doi(doi=doi2)
+    assert len(doi2_clean) == 3
+    assert doi2_clean[0] == "10.1103/PhysRevD.75.124007"
+    assert doi2_clean[1] == "10.1103/PhysRevD.82.029901"
+    assert doi2_clean[2] == "10.1103/PhysRevD.82.129903"

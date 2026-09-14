@@ -12,8 +12,32 @@ CLEANED_DATASET_PATH = os.environ["CLEANED_DATASET_PATH"]
 
 # regex pattern to substitute multiple whitespaces with single whitespace
 MULTIPLE_WHITESPACES_REGEX = re.compile(" +")
+NEWLINE_BETWEEN_CHARS_REGEX = re.compile(r"(?<=\w)\n(?=\w)")
 
 LATEX_CONVERTER = LatexNodes2Text()
+
+
+def normalize_whitespace(text: str):
+
+    normalized_text = text.strip()
+    normalized_text = NEWLINE_BETWEEN_CHARS_REGEX.sub(" ", normalized_text)
+    normalized_text = MULTIPLE_WHITESPACES_REGEX.sub(" ", normalized_text)
+
+    return normalized_text
+
+
+def parse_doi(doi: str):
+
+    if doi is None:
+        return
+
+    # remove newlines between chars & whitespaces if present
+    normalized_doi = normalize_whitespace(doi)
+
+    normalized_doi = normalized_doi.replace("\n", "")
+    normalized_doi = normalized_doi.split(" ")
+
+    return normalized_doi
 
 
 def parse_authors(authors: str):
@@ -41,7 +65,7 @@ def convert_latex_to_text(latex_text: str):
     converted_text = re.sub(r"[_{}]", "", converted_text)
 
     # replace newline with space if it's between alphanumeric characters
-    converted_text = re.sub(r"(?<=\w)\n(?=\w)", " ", converted_text)
+    converted_text = NEWLINE_BETWEEN_CHARS_REGEX.sub(" ", converted_text)
 
     converted_text = converted_text.replace("\n", "")
     converted_text = MULTIPLE_WHITESPACES_REGEX.sub(" ", converted_text)
@@ -63,6 +87,9 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
     record["title"] = convert_latex_to_text(latex_text=record["title"])
     title_clean = record["title"]
 
+    # doi_clean
+    doi_clean = parse_doi(record.get("doi"))
+
     # categories_clean
     categories_clean = record["categories"].split(" ")
 
@@ -77,7 +104,7 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
         "title": title,
         "title_clean": title_clean,
         "journal-ref": record.get("journal-ref"),
-        "doi": record.get("doi"),
+        "doi": doi_clean,
         "report-no": record.get("report-no"),
         "categories": categories_clean,
         "abstract": abstract,

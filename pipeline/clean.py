@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import re
 import orjson
@@ -10,6 +11,15 @@ from tqdm import tqdm
 load_dotenv()
 RAW_DATASET_PATH = os.environ["RAW_DATASET_PATH"]
 CLEANED_DATASET_PATH = os.environ["CLEANED_DATASET_PATH"]
+LOGS_DIR = Path(__file__).resolve().parent / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+ERROR_LOG_PATH = LOGS_DIR / "clean_errors.log"
+
+logging.basicConfig(
+    filename=ERROR_LOG_PATH,
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 MULTIPLE_WHITESPACES_REGEX = re.compile(" +")
 NEWLINE_BETWEEN_CHARS_REGEX = re.compile(r"(?<=\w)\n(?=\w)")
@@ -61,7 +71,10 @@ def parse_authors(authors: str):
 
 def convert_latex_to_text(latex_text: str):
 
-    converted_text = LATEX_CONVERTER.latex_to_text(latex_text.strip())
+    try:
+        converted_text = LATEX_CONVERTER.latex_to_text(latex_text.strip())
+    except Exception:
+        converted_text = latex_text.strip()
 
     # replace underscores with a space if followed by a letter/number
     converted_text = re.sub(r"_(?:\{)?(?=[a-zA-Z0-9]{2,})", " ", converted_text)
@@ -78,35 +91,45 @@ def convert_latex_to_text(latex_text: str):
     return converted_text.strip()
 
 
+def clean_text(text: str | None) -> str | None:
+
+    if not text:
+        return None
+
+    cleaned = convert_latex_to_text(latex_text=text)
+
+    return remove_html_tags(text=cleaned)
+
+
 def clean_record(record: dict[str, object]) -> dict[str, object]:
 
-    # Original fields to preserve
-    title = record["title"]
-    abstract = record["abstract"]
+    title = record.get("title")
+    abstract = record.get("abstract")
+    authors = record.get("authors")
 
-    # authors_clean
-    authors_clean = parse_authors(record["authors"])
+    authors_clean = None
+    title_clean = None
+    doi_clean = None
+    categories_clean = None
+    abstract_clean = None
 
-    # title_clean
-    record["title"] = MULTIPLE_WHITESPACES_REGEX.sub(" ", record["title"])
-    record["title"] = convert_latex_to_text(latex_text=record["title"])
-    record["title"] = remove_html_tags(text=record["title"])
-    title_clean = record["title"]
+    try:
+        if authors:
+            authors_clean = parse_authors(authors)
+        if title:
+            title_clean = clean_text(title)
+        if record.get("doi"):
+            doi_clean = parse_doi(record["doi"])
+        if record.get("categories"):
+            categories_clean = record["categories"].split()
+        if abstract:
+            abstract_clean = clean_text(abstract)
+    except Exception as e:
+        logging.warning("Failed cleaning record %s: %s", record.get("id"), e)
 
-    # doi_clean
-    doi_clean = parse_doi(record.get("doi"))
-
-    # categories_clean
-    categories_clean = record["categories"].split(" ")
-
-    # abstract_clean
-    record["abstract"] = convert_latex_to_text(latex_text=record["abstract"])
-    record["abstract"] = remove_html_tags(text=record["abstract"])
-    abstract_clean = record["abstract"]
-
-    cleaned_record = {
-        "id": record["id"],
-        "authors": record["authors"],
+    return {
+        "id": record.get("id"),
+        "authors": authors,
         "authors_clean": authors_clean,
         "title": title,
         "title_clean": title_clean,
@@ -117,8 +140,6 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
         "abstract": abstract,
         "abstract_clean": abstract_clean,
     }
-
-    return cleaned_record
 
 
 def main():
@@ -146,7 +167,14 @@ def main():
             total_lines = sum(1 for _ in file)
             file.seek(0)
 
-        for line in tqdm(file, total=total_lines, desc="Streaming JSONL"):
+        for line in tqdm(
+            file,
+            total=total_lines,
+            desc="Cleaning arXiv dataset",
+            unit="records",
+            colour="green",
+            dynamic_ncols=True,
+        ):
             if limit is not None and limit_count >= limit:
                 break
 
@@ -155,10 +183,14 @@ def main():
             if not line:
                 continue
 
-            record = orjson.loads(line)
-            cleaned_record = clean_record(record=record)
-            outfile.write(orjson.dumps(cleaned_record) + b"\n")
-            limit_count += 1
+            try:
+                record = orjson.loads(line)
+                cleaned_record = clean_record(record=record)
+                outfile.write(orjson.dumps(cleaned_record) + b"\n")
+                limit_count += 1
+            except Exception as e:
+                logging.error("Failed processing record line: %s", e)
+                continue
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import orjson
 from dotenv import load_dotenv
 from pathlib import Path
 from pylatexenc.latex2text import LatexNodes2Text
+from tqdm import tqdm
 
 load_dotenv()
 RAW_DATASET_PATH = os.environ["RAW_DATASET_PATH"]
@@ -144,7 +145,13 @@ def main():
         open(raw_dataset_path, "rb") as file,
         open(cleaned_dataset_path, "wb", buffering=64 * 1024) as outfile,
     ):
-        for line in file:
+        if limit is not None:
+            total_lines = limit
+        else:
+            total_lines = sum(1 for _ in file)
+            file.seek(0)
+
+        for line in tqdm(file, total=total_lines, desc="Streaming JSONL"):
             if limit is not None and limit_count >= limit:
                 break
 

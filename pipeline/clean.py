@@ -1,4 +1,5 @@
 import argparse
+from itertools import islice
 import logging
 import os
 import re
@@ -149,10 +150,12 @@ def main():
     parser.add_argument(
         "--limit", type=int, help="Limit the number of JSONL lines to process"
     )
+    parser.add_argument("--step", type=int, default=1, help="Sample every Nth record")
 
     args = parser.parse_args()
 
     limit = args.limit or None
+    step = args.step
     limit_count = 0
     raw_dataset_path = Path(__file__).resolve().parent.parent / RAW_DATASET_PATH
     cleaned_dataset_path = Path(__file__).resolve().parent.parent / CLEANED_DATASET_PATH
@@ -164,11 +167,11 @@ def main():
         if limit is not None:
             total_lines = limit
         else:
-            total_lines = sum(1 for _ in file)
+            total_lines = sum(1 for _ in file) // step
             file.seek(0)
 
         for line in tqdm(
-            file,
+            islice(file, 0, None, step),
             total=total_lines,
             desc="Cleaning arXiv dataset",
             unit="records",

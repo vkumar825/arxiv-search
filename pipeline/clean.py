@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from pylatexenc.latex2text import LatexNodes2Text
 from tqdm import tqdm
+from fetch_dataset import fetch_dataset
 
 load_dotenv()
 RAW_DATASET_PATH = os.environ["RAW_DATASET_PATH"]
@@ -177,6 +178,11 @@ def main():
     limit_count = 0
     raw_dataset_path = Path(__file__).resolve().parent.parent / RAW_DATASET_PATH
     cleaned_dataset_path = Path(__file__).resolve().parent.parent / CLEANED_DATASET_PATH
+
+    if not raw_dataset_path.is_file() and not fetch_dataset(
+        output_path=raw_dataset_path
+    ):
+        return
 
     with (
         open(raw_dataset_path, "rb") as file,

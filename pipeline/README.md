@@ -49,30 +49,42 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Fetch Dataset
+
+Download the raw arXiv dataset from Kaggle directly (skips download if the file already exists):
+
+```bash
+uv run fetch_dataset.py
+```
+
+*Note: `clean.py` automatically downloads the dataset if it is not already present.*
+
+### Cleaning Dataset
+
 Run `clean.py` from within the `pipeline` directory.
 
-### 1. Full Dataset Run
+#### 1. Full Dataset Run
 Processes every record from the raw snapshot:
 
 ```bash
 uv run clean.py
 ```
 
-### 2. Limit Records (Development / Quick Testing)
+#### 2. Limit Records (Development / Quick Testing)
 Limits processing to the first $N$ records:
 
 ```bash
 uv run clean.py --limit 1000
 ```
 
-### 3. Uniform Sampling with `--step`
+#### 3. Uniform Sampling with `--step`
 Processes every $N^{\text{th}}$ record across the full dataset:
 
 ```bash
 uv run clean.py --step 20
 ```
 
-### 4. Combined Sampling & Limit
+#### 4. Combined Sampling & Limit
 Process up to 5,000 records, taking every 10th record:
 
 ```bash

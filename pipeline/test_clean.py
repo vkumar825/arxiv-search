@@ -173,9 +173,9 @@ def test_clean_record():
     assert cleaned["id"] == "0704.0001"
     assert cleaned["authors"] == ["C. Balázs", "E. L. Berger"]
     assert cleaned["title"] == "Calculation of α with B→ππ"
-    assert cleaned["journal-ref"] == "Phys. Rev. D 76 (2007) 013008"
+    assert cleaned["journal_ref"] == "Phys. Rev. D 76 (2007) 013008"
     assert cleaned["doi"] == ["10.1103/PhysRevD.76.013008"]
-    assert cleaned["report-no"] == "ANL-HEP-PR-07-28"
+    assert cleaned["report_no"] == "ANL-HEP-PR-07-28"
     assert cleaned["categories"] == ["hep-ph", "astro-ph"]
     assert cleaned["abstract"] == "We calculate the α parameter for B→ππ transitions."
 
@@ -199,8 +199,8 @@ def test_clean_record_missing_optional_fields():
     assert cleaned["authors"] == ["Ileana Streinu"]
     assert cleaned["title"] == "Sparse Graphs"
     assert cleaned["doi"] is None
-    assert cleaned["journal-ref"] is None
-    assert cleaned["report-no"] is None
+    assert cleaned["journal_ref"] is None
+    assert cleaned["report_no"] is None
     assert cleaned["categories"] == ["math.CO"]
     assert cleaned["abstract"] == "We discuss sparse graphs."
 

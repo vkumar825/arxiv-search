@@ -22,9 +22,7 @@ export const ingestToMilvus = async (
 
   const progressBar = new cliProgress.SingleBar({
     format:
-      "Ingesting |" +
-      "{bar}" +
-      "| {percentage}% || {value}/{total} Objects || Failures: {fails} || ETA: {eta}s",
+      "Ingesting arXiv records: {percentage}%|{bar}| {value}/{total} [{duration_formatted}<{eta_formatted}, fails: {fails}]",
     barCompleteChar: "\u2588",
     barIncompleteChar: "\u2591",
     hideCursor: true,
@@ -34,33 +32,42 @@ export const ingestToMilvus = async (
 
   const batchIngest = async (data: Record<string, any>[]) => {
     try {
-      await client.upsert({
+      const batchRes = await client.upsert({
         collection_name: collectionName,
         data: data,
       });
+
+      if (batchRes.status && batchRes.status.error_code !== "Success") {
+        throw new Error(batchRes.status.reason || "Batch upsert failed");
+      }
+
       batchCount += 1;
       progressBar.increment(data.length);
     } catch (error) {
       logger.warn("Failed to ingest batch, retrying them individually...");
       let failCount = 0;
 
-      // if batch insert fails, insert each item individually
+      // if batch upsert fails, upsert each item individually
       for (const obj of data) {
         try {
-          await client.upsert({
+          const singleRes = await client.upsert({
             collection_name: collectionName,
             data: [obj],
           });
+
+          if (singleRes.status && singleRes.status.error_code !== "Success") {
+            throw new Error(singleRes.status.reason || "Single upsert failed");
+          }
         } catch (error) {
           failCount++;
           logger.error(
             {
-              err: error,
+              err: error instanceof Error ? error.message : String(error),
               arxivId: obj.arxivId,
               title: obj.title,
               batch: batchCount,
             },
-            "Failed to ingest object",
+            "Failed to ingest record",
           );
         } finally {
           progressBar.increment(1, { fails: failCount });
@@ -135,15 +142,18 @@ export const ingestToMilvus = async (
       batch = [];
     }
 
-    logger.info({ collectionName }, "Flushing collection to commit segments to disk...");
+    logger.info(
+      { collectionName },
+      "Flushing collection to write segments to disk...",
+    );
     await client.flush({ collection_names: [collectionName] });
 
-    logger.info({ collectionName }, "Loading collection into memory...");
-    await client.loadCollectionSync({ collection_name: collectionName });
-
-    logger.info("Completed ingesting and persisting objects to Milvus.");
+    logger.info("Completed ingesting records to Milvus.");
   } catch (error) {
-    logger.error(error, "Failed to ingest objects to Milvus");
+    logger.error(
+      { err: error instanceof Error ? error.message : String(error) },
+      "Failed to ingest objects to Milvus",
+    );
     throw error;
   } finally {
     progressBar.stop();

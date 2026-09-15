@@ -17,8 +17,8 @@ export const ingestToMilvus = async (
   let batchCount = 0;
   let processedCount = 0;
   const seenIds = new Set<string>(); // keep track of ids already processed
-  const rl = await processJSONLines();
   const total = limit ?? (await getTotalLinesCount());
+  const rl = await processJSONLines();
 
   const progressBar = new cliProgress.SingleBar({
     format:
@@ -135,7 +135,13 @@ export const ingestToMilvus = async (
       batch = [];
     }
 
-    logger.info("Completed ingesting objects to Milvus.");
+    logger.info({ collectionName }, "Flushing collection to commit segments to disk...");
+    await client.flush({ collection_names: [collectionName] });
+
+    logger.info({ collectionName }, "Loading collection into memory...");
+    await client.loadCollectionSync({ collection_name: collectionName });
+
+    logger.info("Completed ingesting and persisting objects to Milvus.");
   } catch (error) {
     logger.error(error, "Failed to ingest objects to Milvus");
     throw error;

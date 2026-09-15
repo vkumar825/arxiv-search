@@ -6,45 +6,43 @@ process.loadEnvFile();
 const MODEL_DIMENSION = Number(process.env.MODEL_DIMENSION) || 384;
 
 export class ArxivSchema {
-  #vector: number[] | null = null;
   id: string;
   arxivId: string;
   title: string;
   journalRef: string;
-  doi: string;
+  doi: string[];
+  reportNo: string;
   categories: string[];
   authors: string[];
-  versions: string[];
-  private _text: string;
-
-  set vector(vec: number[]) {
-    this.#vector = vec;
-  }
-
-  get vector(): number[] | null {
-    return this.#vector;
-  }
+  abstract: string;
+  createdDate: string;
+  updatedDate: string;
+  vector: number[] | null = null;
 
   constructor(data: any) {
     this.id = this.createId(data);
     this.arxivId = data.id;
     this.title = data.title;
-    this.journalRef = data["journal-ref"];
+    this.journalRef = data.journal_ref;
     this.doi = data.doi;
+    this.reportNo = data.report_no;
     this.categories = data.categories;
     this.authors = data.authors;
-    this.versions = data.versions;
-    this._text = data.abstract;
+    this.abstract = data.abstract;
+    this.createdDate = data.created_date;
+    this.updatedDate = data.updated_date;
   }
 
   createId(data: any): string {
-    const uniqueId = [data.title, data.id, data.doi || ""].join(":");
+    const uniqueId = [data.title, data.id].join(":");
     return crypto.createHash("sha256").update(uniqueId).digest("hex");
   }
 
   get text(): string {
-    return this._text;
+    // prepend title to abstract for improved retrieval accuracy
+    return `${this.title} ${this.abstract}`;
   }
+
   get object(): Record<string, any> {
     return {
       id: this.id,
@@ -52,10 +50,12 @@ export class ArxivSchema {
       title: this.title,
       journalRef: this.journalRef,
       doi: this.doi,
+      reportNo: this.reportNo,
       categories: this.categories,
       authors: this.authors,
-      versions: this.versions,
-      abstract: this._text,
+      abstract: this.abstract,
+      createdDate: this.createdDate,
+      updatedDate: this.updatedDate,
       vector: this.vector,
     };
   }
@@ -74,6 +74,13 @@ export class ArxivSchema {
         max_length: 32,
       },
       {
+        name: "authors",
+        data_type: DataType.Array,
+        element_type: DataType.VarChar,
+        max_capacity: 128,
+        max_length: 64,
+      },
+      {
         name: "title",
         data_type: DataType.VarChar,
         max_length: 512,
@@ -81,13 +88,21 @@ export class ArxivSchema {
       {
         name: "journalRef",
         data_type: DataType.VarChar,
-        max_length: 512,
+        max_length: 128,
         nullable: true,
       },
       {
         name: "doi",
+        data_type: DataType.Array,
+        element_type: DataType.VarChar,
+        max_capacity: 32,
+        max_length: 64,
+        nullable: true,
+      },
+      {
+        name: "reportNo",
         data_type: DataType.VarChar,
-        max_length: 256,
+        max_length: 128,
         nullable: true,
       },
       {
@@ -98,23 +113,17 @@ export class ArxivSchema {
         max_length: 64,
       },
       {
-        name: "authors",
-        data_type: DataType.Array,
-        element_type: DataType.VarChar,
-        max_capacity: 512,
-        max_length: 128,
-      },
-      {
-        name: "versions",
-        data_type: DataType.Array,
-        element_type: DataType.VarChar,
-        max_capacity: 32,
-        max_length: 64,
-      },
-      {
         name: "abstract",
         data_type: DataType.VarChar,
         max_length: 8192,
+      },
+      {
+        name: "createdDate",
+        data_type: DataType.Timestamptz,
+      },
+      {
+        name: "updatedDate",
+        data_type: DataType.Timestamptz,
       },
       {
         name: "vector",
@@ -127,17 +136,25 @@ export class ArxivSchema {
   static get indexParams(): any[] {
     return [
       {
-        field_name: "id",
+        field_name: "authors",
+        index_type: "AUTOINDEX",
+      },
+      {
+        field_name: "categories",
+        index_type: "AUTOINDEX",
+      },
+      {
+        field_name: "createdDate",
+        index_type: "AUTOINDEX",
+      },
+      {
+        field_name: "updatedDate",
         index_type: "AUTOINDEX",
       },
       {
         field_name: "vector",
         index_type: "AUTOINDEX",
         metric_type: "COSINE",
-      },
-      {
-        field_name: "categories",
-        index_type: "AUTOINDEX",
       },
     ];
   }

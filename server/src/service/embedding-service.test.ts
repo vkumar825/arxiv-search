@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEmbeddings } from './embedding-service.js';
+import { createEmbeddings } from './embedding-service.js';
 import { getPipelineInstance } from '../config/pipeline.js';
 
 vi.mock('../config/pipeline.js', () => ({
@@ -28,7 +28,7 @@ describe('Embedding Service', () => {
 
     vi.mocked(getPipelineInstance).mockResolvedValue(mockPipelineFn);
 
-    const result = await getEmbeddings(mockTexts);
+    const result = await createEmbeddings(mockTexts);
 
     // Verify pipeline initialization was called
     expect(getPipelineInstance).toHaveBeenCalledOnce();
@@ -63,7 +63,7 @@ describe('Embedding Service', () => {
 
     vi.mocked(getPipelineInstance).mockResolvedValue(mockPipelineFn);
 
-    await expect(getEmbeddings(mockTexts)).rejects.toThrow(
+    await expect(createEmbeddings(mockTexts)).rejects.toThrow(
       'Embedding mismatch: Got 1 embeddings for 2 texts.'
     );
   });

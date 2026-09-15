@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-15
+
+### Added
+- Implemented data cleaning pipeline using Python (https://github.com/vkumar825/arxiv-search/pull/28)
+- Refactored codebase to move away from schema-blind approach and stick to arXiv dataset
+- Overhauled arXiv schema to account for the cleaned arXiv dataset (https://github.com/vkumar825/arxiv-search/pull/27)
+- Fixed error handling typos in `ingestion-service.ts` to properly catch errors that went undetected
+- Added unit tests for search controllers, milvus schemas, and embedding services.
+
+### Changed
+- Updated dependencies, removed unused libraries in package.json
+- Addressed security vulnerabilities for `adm-zip`, `sharp`, and `qs` packages
+
 ## [0.2.2] - 2026-08-29
 
 ### Added

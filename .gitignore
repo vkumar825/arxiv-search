@@ -1,9 +1,13 @@
 # Milvus
 volumes
 
+# Python
+__pycache__
+
 # Misc
 data
 .DS_Store
+.vscode
 
 # Logs
 logs

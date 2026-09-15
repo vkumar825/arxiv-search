@@ -3,7 +3,7 @@ import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 import { ArxivSchema } from "../models/arxiv-schema.js";
 import logger from "../utils/logger.js";
 import cliProgress from "cli-progress";
-import { getTotalLinesCount, processJSONLines } from "../utils/data-manager.js";
+import { getTotalLinesCount, processJSONLines } from "../utils/data-loader.js";
 
 export const ingestToMilvus = async (
   client: MilvusClient,

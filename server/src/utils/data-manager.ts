@@ -7,13 +7,13 @@ import linesCount from "file-lines-count";
 import StreamZip from "node-stream-zip";
 
 process.loadEnvFile();
-const datasetPath = process.env.DATASET_PATH as string;
+const datasetPath = process.env.RAW_DATASET_PATH as string;
+const cleanDatasetPath = process.env.CLEANED_DATASET_PATH as string;
 const datasetUrl = process.env.DATASET_URL as string;
 const kaggleUsername = process.env.KAGGLE_USERNAME;
 const kaggleKey = process.env.KAGGLE_KEY;
 
-
-export const fetchDataset = async (): Promise<void> => {
+export const fetchRawDataset = async (): Promise<void> => {
   if (fs.existsSync(datasetPath)) {
     return;
   }
@@ -28,9 +28,11 @@ export const fetchDataset = async (): Promise<void> => {
   }
 
   const zipPath = path.join(targetDir, "arxiv-dataset.zip");
-  const credentials = Buffer.from(`${kaggleUsername}:${kaggleKey}`).toString("base64");
+  const credentials = Buffer.from(`${kaggleUsername}:${kaggleKey}`).toString(
+    "base64",
+  );
 
-  console.log("Downloading arXiv dataset from Kaggle...");
+  console.log("Downloading raw arXiv dataset from Kaggle...");
 
   const response = await fetch(datasetUrl, {
     headers: {
@@ -51,25 +53,36 @@ export const fetchDataset = async (): Promise<void> => {
   const fileStream = fs.createWriteStream(zipPath);
   await pipeline(Readable.fromWeb(response.body as any), fileStream);
 
-  console.log("Extracting dataset archive...");
+  console.log("Extracting dataset...");
   const zip = new StreamZip.async({ file: zipPath });
   await zip.extract(null, path.resolve(targetDir));
   await zip.close();
   await fs.promises.unlink(zipPath);
 
-  console.log("Dataset successfully downloaded and extracted.");
+  console.log("Raw arXiv dataset successfully downloaded and extracted.");
 };
 
 export const getTotalLinesCount = async (): Promise<number> => {
-  await fetchDataset();
-  const totalLinesCount = await linesCount(datasetPath);
-  return totalLinesCount;
+  if (!cleanDatasetPath || !fs.existsSync(cleanDatasetPath)) {
+    throw new Error(
+      `Cannot count lines: cleaned dataset not found at "${cleanDatasetPath}".`,
+    );
+  }
+  return await linesCount(cleanDatasetPath);
 };
 
 export const processJSONLines = async (): Promise<readline.Interface> => {
-  await fetchDataset();
+  if (!cleanDatasetPath || !fs.existsSync(cleanDatasetPath)) {
+    if (datasetPath && !fs.existsSync(datasetPath)) {
+      await fetchRawDataset();
+    }
+    throw new Error(
+      `Cleaned arXiv dataset not found at "${cleanDatasetPath}".\n` +
+        "Please refer to pipeline/README.md to generate a cleaned dataset.",
+    );
+  }
 
-  const fileStream = fs.createReadStream(datasetPath);
+  const fileStream = fs.createReadStream(cleanDatasetPath);
 
   return readline.createInterface({
     input: fileStream,

@@ -1,4 +1,5 @@
 import argparse
+from email.utils import parsedate_to_datetime
 from itertools import islice
 import logging
 import os
@@ -29,6 +30,17 @@ HTML_REGEX = re.compile(
 )
 AUTHORS_SPLIT_REGEX = re.compile(r",\s*(?:and\s+)?|\s+and\s+")
 LATEX_CONVERTER = LatexNodes2Text()
+
+
+def parse_date(date_str: str | None) -> str | None:
+    if not date_str:
+        return None
+    try:
+        # converts raw arXiv date string to ISO 8601 format
+        dt = parsedate_to_datetime(date_str)
+        return dt.isoformat(timespec="seconds")
+    except Exception:
+        return None
 
 
 def remove_html_tags(text: str):
@@ -107,6 +119,13 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
     title = record.get("title")
     abstract = record.get("abstract")
     authors = record.get("authors")
+    versions = record.get("versions") or []
+
+    # getting v1 date
+    created_date = parse_date(versions[0]["created"]) if versions else None
+
+    # getting v2 date
+    updated_date = parse_date(versions[-1]["created"]) if versions else None
 
     authors_clean = None
     title_clean = None
@@ -130,16 +149,15 @@ def clean_record(record: dict[str, object]) -> dict[str, object]:
 
     return {
         "id": record.get("id"),
-        "authors": authors,
-        "authors_clean": authors_clean,
-        "title": title,
-        "title_clean": title_clean,
+        "authors": authors_clean,
+        "title": title_clean,
         "journal-ref": record.get("journal-ref"),
         "doi": doi_clean,
         "report-no": record.get("report-no"),
         "categories": categories_clean,
-        "abstract": abstract,
-        "abstract_clean": abstract_clean,
+        "abstract": abstract_clean,
+        "created_date": created_date,
+        "updated_date": updated_date,
     }
 
 
@@ -150,7 +168,7 @@ def main():
     parser.add_argument(
         "--limit", type=int, help="Limit the number of JSONL lines to process"
     )
-    parser.add_argument("--step", type=int, default=1, help="Sample every Nth record")
+    parser.add_argument("--step", type=int, default=1, help="Process every Nth record")
 
     args = parser.parse_args()
 

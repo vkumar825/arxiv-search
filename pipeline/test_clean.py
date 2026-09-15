@@ -3,6 +3,7 @@ from clean import (
     convert_latex_to_text,
     normalize_whitespace,
     parse_authors,
+    parse_date,
     parse_doi,
     remove_html_tags,
 )
@@ -169,26 +170,14 @@ def test_clean_record():
 
     cleaned = clean_record(record=raw_record)
 
-    # Preserved raw fields
     assert cleaned["id"] == "0704.0001"
-    assert cleaned["authors"] == "C. Bal\\'azs and E. L. Berger"
-    assert cleaned["title"] == "Calculation of $\\alpha$ with $B\\to\\pi\\pi$"
-    assert (
-        cleaned["abstract"]
-        == "We calculate the $\\alpha$ parameter for $B\\to\\pi\\pi$ transitions.\n"
-    )
+    assert cleaned["authors"] == ["C. Balázs", "E. L. Berger"]
+    assert cleaned["title"] == "Calculation of α with B→ππ"
     assert cleaned["journal-ref"] == "Phys. Rev. D 76 (2007) 013008"
-    assert cleaned["report-no"] == "ANL-HEP-PR-07-28"
-
-    # Cleaned fields
-    assert cleaned["authors_clean"] == ["C. Balázs", "E. L. Berger"]
-    assert cleaned["title_clean"] == "Calculation of α with B→ππ"
     assert cleaned["doi"] == ["10.1103/PhysRevD.76.013008"]
+    assert cleaned["report-no"] == "ANL-HEP-PR-07-28"
     assert cleaned["categories"] == ["hep-ph", "astro-ph"]
-    assert (
-        cleaned["abstract_clean"]
-        == "We calculate the α parameter for B→ππ transitions."
-    )
+    assert cleaned["abstract"] == "We calculate the α parameter for B→ππ transitions."
 
 
 def test_clean_record_missing_optional_fields():
@@ -207,10 +196,29 @@ def test_clean_record_missing_optional_fields():
     cleaned = clean_record(record=raw_record)
 
     assert cleaned["id"] == "0704.0002"
-    assert cleaned["authors_clean"] == ["Ileana Streinu"]
-    assert cleaned["title_clean"] == "Sparse Graphs"
+    assert cleaned["authors"] == ["Ileana Streinu"]
+    assert cleaned["title"] == "Sparse Graphs"
     assert cleaned["doi"] is None
     assert cleaned["journal-ref"] is None
     assert cleaned["report-no"] is None
     assert cleaned["categories"] == ["math.CO"]
-    assert cleaned["abstract_clean"] == "We discuss sparse graphs."
+    assert cleaned["abstract"] == "We discuss sparse graphs."
+
+
+def test_parse_date():
+
+    example_versions = [
+        {"version": "v1", "created": "Mon, 2 Apr 2007 19:18:42 GMT"},
+        {"version": "v2", "created": "Tue, 24 Jul 2007 20:10:27 GMT"},
+    ]
+
+    v1_date = parse_date(date_str=example_versions[0]["created"])
+    v2_date = parse_date(date_str=example_versions[-1]["created"])
+
+    assert v1_date == "2007-04-02T19:18:42+00:00"
+
+    assert v2_date == "2007-07-24T20:10:27+00:00"
+
+    none_date = parse_date(date_str=None)
+
+    assert none_date is None

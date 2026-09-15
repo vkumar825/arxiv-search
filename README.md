@@ -1,6 +1,6 @@
 # arxiv-search
 
-`arxiv-search` is a sandbox environment to test out the basic functionalities of Milvus vector database using the NodeJS SDK (now fully migrated to TypeScript!).
+`arxiv-search` is a search engine application powered by the Milvus vector database, Node, Express, and React to allow users to find arXiv papers efficiently via hybrid search (semantic + keyword).  
 
 ## Getting Started
 
@@ -10,7 +10,6 @@ Follow these steps to get the project up and running on your local machine.
 
 - [Node.js](https://nodejs.org/) (and npm) installed.
 - [Docker](https://www.docker.com/) and Docker Compose installed.
-- [Python](https://www.python.org/) (>= 3.13) and [uv](https://docs.astral.sh/uv/) (or `pip`) for the data cleaning pipeline.
 
 ### Installation & Setup
 
@@ -45,19 +44,13 @@ Follow these steps to get the project up and running on your local machine.
    npm install
    ```
 
-5. **Dataset Management & Cleaning:**
-   Dataset handling is managed by [`server/src/utils/data-manager.ts`](server/src/utils/data-manager.ts), which can automatically download and extract the raw arXiv dataset from Kaggle (configured via `KAGGLE_USERNAME` and `KAGGLE_KEY` in `.env`) and stream records during ingestion.
-
-   <br>
-
+5. **Dataset Cleaning:**
    Before data can be ingested into Milvus, the raw snapshot must be cleaned into the required JSONL format. For the full guide on running the cleaning script, refer to [`pipeline/README.md`](pipeline/README.md).
 
 6. **Viewing Data:**
    To explore the data ingested into Milvus, you can use the built-in Milvus WebUI (accessible at `http://localhost:9091/webui/`).
 
-   <br>
-
-   However, using **Attu** is highly recommended for a better experience. You can download the Attu desktop client from its [releases page](https://github.com/zilliztech/attu/releases).
+   However, using **Attu** is highly recommended for better UI/UX experience. You can download the Attu desktop client from its [releases page](https://github.com/zilliztech/attu/releases).
 
 ## Usage
 

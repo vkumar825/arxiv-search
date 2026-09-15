@@ -77,8 +77,8 @@ export class ArxivSchema {
         name: "authors",
         data_type: DataType.Array,
         element_type: DataType.VarChar,
-        max_capacity: 128,
-        max_length: 64,
+        max_capacity: 2048,
+        max_length: 512,
       },
       {
         name: "title",
@@ -88,7 +88,7 @@ export class ArxivSchema {
       {
         name: "journalRef",
         data_type: DataType.VarChar,
-        max_length: 128,
+        max_length: 512,
         nullable: true,
       },
       {
@@ -96,13 +96,13 @@ export class ArxivSchema {
         data_type: DataType.Array,
         element_type: DataType.VarChar,
         max_capacity: 32,
-        max_length: 64,
+        max_length: 128,
         nullable: true,
       },
       {
         name: "reportNo",
         data_type: DataType.VarChar,
-        max_length: 128,
+        max_length: 512,
         nullable: true,
       },
       {

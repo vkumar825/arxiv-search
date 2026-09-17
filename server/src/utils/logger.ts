@@ -25,7 +25,10 @@ const baseOptions = {
   timestamp: pino.stdTimeFunctions.isoTime,
 };
 
-const server = pino(baseOptions, serverDest);
+const server = pino(
+  baseOptions,
+  pino.multistream([{ stream: process.stdout }, { stream: serverDest }]),
+);
 
 const ingestion = pino(baseOptions, ingestionDest);
 

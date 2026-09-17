@@ -7,6 +7,8 @@ export const handleSearchRequest = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const filter = (req.query.filter as string) || "";
 
+    req.log.info({ term, limit, filter }, "Incoming search request");
+
     if (!term || term === "") {
       return res.status(400).json({ error: "Search term is required" });
     }
@@ -22,6 +24,7 @@ export const handleSearchRequest = async (req: Request, res: Response) => {
       return res.status(200).json({ results: sanitizedResults });
     }
   } catch (error: any) {
+    req.log.error({ err: error.message }, "Search request failed");
     res.status(500).json({ error: error.message });
   }
 };

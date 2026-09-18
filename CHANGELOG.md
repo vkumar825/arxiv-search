@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-17
+
+### Added
+- Installed `pino-http` and `pino-pretty` packages
+- Created `run-server.sh` to start up Express API server from root dir
+- Added `pino-http` middleware to Express to log HTTP requests
+
+### Changed
+- Revamped Pino logging infrastructure (https://github.com/vkumar825/arxiv-search/pull/32)
+- Switched console logging for error and info to use server logging instance
+- Made `ingestion-service.ts` output logging information to its dedicated log file (`ingestion.log`)
+
+### Fixed
+- Resolved broken tests in `search-controller.test.ts` by adding mocked `req.log`
+
 ## [0.3.0] - 2026-09-15
 
 ### Added

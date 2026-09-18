@@ -1,7 +1,7 @@
 import { createEmbeddings } from "./embedding-service.js";
 import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 import { ArxivSchema } from "../models/arxiv-schema.js";
-import logger from "../utils/logger.js";
+import { ingestion as ingestionLogger } from "../utils/logger.js";
 import cliProgress from "cli-progress";
 import { getTotalLinesCount, processJSONLines } from "../utils/data-loader.js";
 
@@ -44,7 +44,9 @@ export const ingestToMilvus = async (
       batchCount += 1;
       progressBar.increment(data.length);
     } catch (error) {
-      logger.warn("Failed to ingest batch, retrying them individually...");
+      ingestionLogger.warn(
+        "Failed to ingest batch, retrying them individually...",
+      );
       let failCount = 0;
 
       // if batch upsert fails, upsert each item individually
@@ -60,7 +62,7 @@ export const ingestToMilvus = async (
           }
         } catch (error) {
           failCount++;
-          logger.error(
+          ingestionLogger.error(
             {
               err: error instanceof Error ? error.message : String(error),
               arxivId: obj.arxivId,
@@ -74,12 +76,12 @@ export const ingestToMilvus = async (
         }
       }
       if (failCount === 0) {
-        logger.info(
+        ingestionLogger.info(
           { batch: batchCount },
           "Successfully recovered failed batch via individual inserts",
         );
       } else {
-        logger.info(
+        ingestionLogger.info(
           { batch: batchCount, failCount },
           "Batch recovery completed with partial failures",
         );
@@ -137,20 +139,23 @@ export const ingestToMilvus = async (
     }
 
     if (batch.length > 0) {
-      logger.info({ finalBatchSize: batch.length }, "Ingesting final batch");
+      ingestionLogger.info(
+        { finalBatchSize: batch.length },
+        "Ingesting final batch",
+      );
       await batchIngest(batch);
       batch = [];
     }
 
-    logger.info(
+    ingestionLogger.info(
       { collectionName },
       "Flushing collection to write segments to disk...",
     );
     await client.flush({ collection_names: [collectionName] });
 
-    logger.info("Completed ingesting records to Milvus.");
+    ingestionLogger.info({ totalProcessed: processedCount }, "Ingestion run completed successfully")
   } catch (error) {
-    logger.error(
+    ingestionLogger.error(
       { err: error instanceof Error ? error.message : String(error) },
       "Failed to ingest objects to Milvus",
     );

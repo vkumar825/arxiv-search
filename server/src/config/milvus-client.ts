@@ -1,4 +1,5 @@
 import { MilvusClient } from "@zilliz/milvus2-sdk-node";
+import { server as serverLogger } from "../utils/logger.js";
 
 process.loadEnvFile();
 
@@ -25,8 +26,8 @@ export const getMilvusClient = async () => {
       }
 
       return client;
-    } catch (error) {
-      console.error("Milvus Initialization Error:", error);
+    } catch (error: any) {
+      serverLogger.error({ err: error.message }, "Milvus Initialization Error");
       clientPromise = null;
       throw error;
     }

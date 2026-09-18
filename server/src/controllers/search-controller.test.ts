@@ -17,6 +17,10 @@ describe("Search Controller tests", () => {
     req = {
       baseUrl: "/api/v1",
       query: { term: "test", limit: "10", filter: "" },
+      log: {
+        info: vi.fn(),
+        error: vi.fn(),
+      } as any,
     };
 
     res = {

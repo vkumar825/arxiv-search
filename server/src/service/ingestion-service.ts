@@ -153,7 +153,7 @@ export const ingestToMilvus = async (
     );
     await client.flush({ collection_names: [collectionName] });
 
-    ingestionLogger.info("Completed ingesting records to Milvus.");
+    ingestionLogger.info({ totalProcessed: processedCount }, "Ingestion run completed successfully")
   } catch (error) {
     ingestionLogger.error(
       { err: error instanceof Error ? error.message : String(error) },

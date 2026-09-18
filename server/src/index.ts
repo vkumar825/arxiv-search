@@ -11,8 +11,25 @@ process.loadEnvFile();
 const EXPRESS_PORT = process.env.EXPRESS_PORT || 3000;
 const app = express();
 
+const formatHttpLog = (req: any, res: any) =>
+  `${req.method} ${req.url} ${res.statusCode} ${res.statusMessage}`;
+
 // use pino-http middleware
-app.use(pinoHttp({ logger: serverLogger }));
+app.use(
+  pinoHttp({
+    logger: serverLogger,
+    serializers: {
+      req: (req) => ({ id: req.id, method: req.method, url: req.url }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
+    customSuccessMessage: formatHttpLog,
+    customErrorMessage: formatHttpLog,
+    customErrorObject: (_req, _res, _err, val) => ({
+      res: val.res,
+      responseTime: val.responseTime,
+    }),
+  }),
+);
 
 // initialize milvusClient
 await getMilvusClient();

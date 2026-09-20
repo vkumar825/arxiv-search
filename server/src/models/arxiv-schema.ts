@@ -1,4 +1,4 @@
-import { DataType, FieldType } from "@zilliz/milvus2-sdk-node";
+import { DataType, FieldType, FunctionType } from "@zilliz/milvus2-sdk-node";
 import crypto from "node:crypto";
 
 process.loadEnvFile();
@@ -17,7 +17,7 @@ export class ArxivSchema {
   abstract: string;
   createdDate: string;
   updatedDate: string;
-  vector: number[] | null = null;
+  denseVector: number[] | null = null;
 
   constructor(data: any) {
     this.id = this.createId(data);
@@ -56,9 +56,10 @@ export class ArxivSchema {
       abstract: this.abstract,
       createdDate: this.createdDate,
       updatedDate: this.updatedDate,
-      vector: this.vector,
+      denseVector: this.denseVector,
     };
   }
+
   // Milvus schema designed for this dataset (https://www.kaggle.com/datasets/Cornell-University/arxiv)
   static get schema(): FieldType[] {
     return [
@@ -116,6 +117,7 @@ export class ArxivSchema {
         name: "abstract",
         data_type: DataType.VarChar,
         max_length: 8192,
+        enable_analyzer: true
       },
       {
         name: "createdDate",
@@ -126,9 +128,13 @@ export class ArxivSchema {
         data_type: DataType.Timestamptz,
       },
       {
-        name: "vector",
+        name: "denseVector",
         data_type: DataType.FloatVector,
         dim: MODEL_DIMENSION,
+      },
+      {
+        name: "sparseVector",
+        data_type: DataType.SparseFloatVector,
       },
     ];
   }
@@ -152,9 +158,30 @@ export class ArxivSchema {
         index_type: "AUTOINDEX",
       },
       {
-        field_name: "vector",
+        field_name: "denseVector",
         index_type: "AUTOINDEX",
         metric_type: "COSINE",
+      },
+      {
+        field_name: "sparseVector",
+        index_type: "SPARSE_INVERTED_INDEX",
+        metric_type: "BM25",
+        params: {
+          inverted_index_algo: "DAAT_MAXSCORE",
+        },
+      },
+    ];
+  }
+
+  static get functions(): any[] {
+    return [
+      {
+        name: "text_bm25_emb",
+        description: "text bm25 function",
+        type: FunctionType.BM25,
+        input_field_names: ["abstract"],
+        output_field_names: ["sparseVector"],
+        params: {},
       },
     ];
   }

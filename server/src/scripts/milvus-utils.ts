@@ -3,7 +3,6 @@
 import { fileURLToPath } from "url";
 import { Command } from "commander";
 import { runMilvusClient } from "../config/milvus-client.js";
-import { ingestToMilvus } from "../service/ingestion-service.js";
 import { MilvusClient } from "@zilliz/milvus2-sdk-node";
 import { ArxivSchema } from "../models/arxiv-schema.js";
 
@@ -132,6 +131,7 @@ const createMilvusCollection = async (client: MilvusClient, name: string) => {
       collection_name: name,
       schema: ArxivSchema.schema,
       index_params: ArxivSchema.indexParams,
+      functions: ArxivSchema.functions,
     });
     console.log(`Successfully created Milvus collection: ${name}`);
   } catch (error) {
@@ -253,10 +253,7 @@ if (isMain) {
         "number of objects to process per embedding call",
         "128",
       )
-      .option(
-        "-l, --limit <number>",
-        "maximum number of objects to ingest",
-      );
+      .option("-l, --limit <number>", "maximum number of objects to ingest");
 
     ingest.action(
       runMilvusClient(async (client, collectionName, options) => {
@@ -269,6 +266,10 @@ if (isMain) {
             `Limit (${limit}) cannot be less than batch size (${batchSize})`,
           );
         }
+
+        // dynamically import the function so it does not load the ingest function at the start
+        const { ingestToMilvus } =
+          await import("../service/ingestion-service.js");
 
         await ingestToMilvus(
           client,

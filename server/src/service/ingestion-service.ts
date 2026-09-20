@@ -12,13 +12,32 @@ export const ingestToMilvus = async (
   embedBatchSize: number,
   limit?: number,
 ) => {
+  const startTime = Date.now();
   let batch: Record<string, any>[] = [];
   let objectsToEmbed: ArxivSchema[] = [];
   let batchCount = 0;
+  let embedBatchCount = 0;
   let processedCount = 0;
+  let upsertedCount = 0;
   const seenIds = new Set<string>(); // keep track of ids already processed
   const total = limit ?? (await getTotalLinesCount());
   const rl = await processJSONLines();
+
+  // Log milestones every 10% (or at least every batch)
+  const milestoneInterval = Math.max(batchSize, Math.floor(total / 10));
+  let nextMilestone = milestoneInterval;
+
+  ingestionLogger.info(
+    {
+      collectionName,
+      totalRecords: total,
+      batchSize,
+      embedBatchSize,
+      milestoneInterval,
+      limit: limit ?? null,
+    },
+    "Starting arXiv ingestion to Milvus",
+  );
 
   const progressBar = new cliProgress.SingleBar({
     format:
@@ -31,6 +50,7 @@ export const ingestToMilvus = async (
   progressBar.start(total, 0, { fails: 0 });
 
   const batchIngest = async (data: Record<string, any>[]) => {
+    const upsertStartTime = Date.now();
     try {
       const batchRes = await client.upsert({
         collection_name: collectionName,
@@ -41,8 +61,50 @@ export const ingestToMilvus = async (
         throw new Error(batchRes.status.reason || "Batch upsert failed");
       }
 
+      upsertedCount += data.length;
       batchCount += 1;
+      const durationMs = Date.now() - upsertStartTime;
       progressBar.increment(data.length);
+
+      ingestionLogger.debug(
+        {
+          batch: batchCount,
+          recordCount: data.length,
+          upsertedCount,
+          durationMs,
+        },
+        "Batch upserted to Milvus",
+      );
+
+      if (upsertedCount >= nextMilestone) {
+        const progressPercent = Math.min(
+          100,
+          Math.round((upsertedCount / total) * 100),
+        );
+        const elapsedSeconds = Number(
+          ((Date.now() - startTime) / 1000).toFixed(1),
+        );
+        const recordsPerSecond =
+          elapsedSeconds > 0
+            ? Number((upsertedCount / elapsedSeconds).toFixed(1))
+            : upsertedCount;
+
+        ingestionLogger.info(
+          {
+            milestone: `${progressPercent}%`,
+            upsertedRecords: upsertedCount,
+            totalRecords: total,
+            batch: batchCount,
+            elapsedSeconds,
+            recordsPerSecond,
+          },
+          `Milestone reached: ${upsertedCount}/${total} records (${progressPercent}%) successfully upserted`,
+        );
+
+        while (nextMilestone <= upsertedCount) {
+          nextMilestone += milestoneInterval;
+        }
+      }
     } catch (error) {
       ingestionLogger.warn(
         "Failed to ingest batch, retrying them individually...",
@@ -92,14 +154,29 @@ export const ingestToMilvus = async (
   const getEmbeddings = async () => {
     if (objectsToEmbed.length === 0) return;
     const texts = objectsToEmbed.map((obj) => obj.text);
+    embedBatchCount += 1;
+    const currentEmbedBatch = embedBatchCount;
+    const count = texts.length;
+
+    const embedStartTime = Date.now();
     const vectors = await createEmbeddings(texts);
+    const durationMs = Date.now() - embedStartTime;
 
     vectors.forEach((vec, i) => {
-      objectsToEmbed[i].vector = vec;
+      objectsToEmbed[i].denseVector = vec;
     });
 
     batch.push(...objectsToEmbed.map((doc) => doc.object));
     objectsToEmbed = []; // reset array to embed the next batch
+
+    ingestionLogger.debug(
+      {
+        embedBatch: currentEmbedBatch,
+        count,
+        durationMs,
+      },
+      "Generated embeddings for batch",
+    );
   };
 
   try {
@@ -151,12 +228,44 @@ export const ingestToMilvus = async (
       { collectionName },
       "Flushing collection to write segments to disk...",
     );
+    const flushStartTime = Date.now();
     await client.flush({ collection_names: [collectionName] });
+    const flushDurationMs = Date.now() - flushStartTime;
+    ingestionLogger.info(
+      { collectionName, durationMs: flushDurationMs },
+      "Collection flushed successfully",
+    );
 
-    ingestionLogger.info({ totalProcessed: processedCount }, "Ingestion run completed successfully")
+    const totalDurationSeconds = Number(
+      ((Date.now() - startTime) / 1000).toFixed(2),
+    );
+    const avgRecordsPerSecond =
+      totalDurationSeconds > 0
+        ? Number((upsertedCount / totalDurationSeconds).toFixed(1))
+        : upsertedCount;
+
+    ingestionLogger.info(
+      {
+        collectionName,
+        totalProcessed: upsertedCount,
+        totalBatches: batchCount,
+        totalEmbedBatches: embedBatchCount,
+        durationSeconds: totalDurationSeconds,
+        recordsPerSecond: avgRecordsPerSecond,
+      },
+      "Ingestion run completed successfully",
+    );
   } catch (error) {
+    const totalDurationSeconds = Number(
+      ((Date.now() - startTime) / 1000).toFixed(2),
+    );
     ingestionLogger.error(
-      { err: error instanceof Error ? error.message : String(error) },
+      {
+        err: error instanceof Error ? error.message : String(error),
+        collectionName,
+        processedBeforeFailure: processedCount,
+        durationSeconds: totalDurationSeconds,
+      },
       "Failed to ingest objects to Milvus",
     );
     throw error;

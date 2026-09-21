@@ -154,7 +154,7 @@ export class ArxivSchema {
         index_type: "AUTOINDEX",
       },
       {
-        field_name: "updatedDate",
+        field_name: "arxivId",
         index_type: "AUTOINDEX",
       },
       {

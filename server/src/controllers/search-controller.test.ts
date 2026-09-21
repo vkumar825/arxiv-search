@@ -57,7 +57,7 @@ describe("Search Controller tests", () => {
     req.query!.limit = "15";
     await handleSearchRequest(req as Request, res as Response, next);
 
-    expect(getSearchResults).toHaveBeenCalledWith("test", 15, "");
+    expect(getSearchResults).toHaveBeenCalledWith("test", 15, "", [], [], []);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
@@ -65,7 +65,29 @@ describe("Search Controller tests", () => {
     req.query!.limit = "invalid";
     await handleSearchRequest(req as Request, res as Response, next);
 
-    expect(getSearchResults).toHaveBeenCalledWith("test", 10, "");
+    expect(getSearchResults).toHaveBeenCalledWith("test", 10, "", [], [], []);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  test("verify filter parameters are parsed and passed to search service", async () => {
+    req.query = {
+      term: "quantum",
+      limit: "20",
+      arxivId: "0704.0001",
+      category: ["quant-ph", "cs.AI"] as any,
+      author: "Alice",
+      createdDate: ["2023-01-01", "2023-12-31"] as any,
+    };
+    await handleSearchRequest(req as Request, res as Response, next);
+
+    expect(getSearchResults).toHaveBeenCalledWith(
+      "quantum",
+      20,
+      "0704.0001",
+      ["quant-ph", "cs.AI"],
+      ["Alice"],
+      ["2023-01-01", "2023-12-31"],
+    );
     expect(res.status).toHaveBeenCalledWith(200);
   });
 

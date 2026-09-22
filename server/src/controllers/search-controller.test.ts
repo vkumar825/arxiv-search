@@ -32,7 +32,7 @@ describe("Search Controller tests", () => {
     next = vi.fn();
 
     vi.mocked(getSearchResults).mockResolvedValue({
-      results: [{ id: "1", title: "Paper 1", vector: [0.1, 0.2] }],
+      results: [{ id: "1", title: "Paper 1" }],
     } as any);
   });
 
@@ -51,6 +51,17 @@ describe("Search Controller tests", () => {
     expect(res.json).toHaveBeenCalledWith({
       results: [{ id: "1", title: "Paper 1" }],
     });
+  });
+
+  it("should return empty array if no results are found", async () => {
+    vi.mocked(getSearchResults).mockResolvedValueOnce({
+      results: [],
+    } as any);
+
+    await handleSearchRequest(req as Request, res as Response, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ results: [] });
   });
 
   test("verify limit is parsed as an integer", async () => {

@@ -22,6 +22,7 @@ export const handleSearchRequest = async (
   try {
     const term = req.query.term as string;
     const limit = parseInt(req.query.limit as string) || 10;
+
     const arxivId = (req.query.arxivId as string) || "";
     const categories = parseFilterArray(req.query.category as any);
     const authors = parseFilterArray(req.query.author as any);
@@ -45,12 +46,7 @@ export const handleSearchRequest = async (
       createdDates,
     );
 
-    // exclude vector field from the results (because it makes it messy to read)
-    const sanitizedResults = searchResults.results.map((item) => {
-      const { vector, ...rest } = item;
-      return rest;
-    });
-    return res.status(200).json({ results: sanitizedResults });
+    return res.status(200).json({ results: searchResults.results || [] });
   } catch (error) {
     next(error);
   }

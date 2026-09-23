@@ -44,13 +44,13 @@ export const getSearchResults = async (
         data: [...encodedTerm.data],
         anns_field: "denseVector",
         limit: DENSE_CANDIDATES_LIMIT,
-        filter: filterExpression,
+        expr: filterExpression,
       },
       {
         data: [term],
         anns_field: "sparseVector",
         limit: SPARSE_CANDIDATES_LIMIT,
-        filter: filterExpression,
+        expr: filterExpression,
       },
     ],
     rerank: {

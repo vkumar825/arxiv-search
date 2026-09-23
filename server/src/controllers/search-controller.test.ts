@@ -17,7 +17,7 @@ describe("Search Controller tests", () => {
 
     req = {
       baseUrl: "/api/v1",
-      query: { term: "test", limit: "10", filter: "" },
+      query: { term: "test", filter: "" },
       log: {
         info: vi.fn(),
         error: vi.fn(),
@@ -66,7 +66,6 @@ describe("Search Controller tests", () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(getSearchResults).toHaveBeenCalledWith(
       "",
-      10,
       "",
       [],
       ["Somnath Choudhury"],
@@ -94,26 +93,9 @@ describe("Search Controller tests", () => {
     expect(res.json).toHaveBeenCalledWith({ results: [] });
   });
 
-  test("verify limit is parsed as an integer", async () => {
-    req.query!.limit = "15";
-    await handleSearchRequest(req as Request, res as Response, next);
-
-    expect(getSearchResults).toHaveBeenCalledWith("test", 15, "", [], [], []);
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-
-  test("verify invalid limit defaults to 10", async () => {
-    req.query!.limit = "invalid";
-    await handleSearchRequest(req as Request, res as Response, next);
-
-    expect(getSearchResults).toHaveBeenCalledWith("test", 10, "", [], [], []);
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-
   test("verify filter parameters are parsed and passed to search service", async () => {
     req.query = {
       term: "quantum",
-      limit: "20",
       arxivId: "0704.0001",
       category: ["quant-ph", "cs.AI"] as any,
       author: "Alice",
@@ -123,7 +105,6 @@ describe("Search Controller tests", () => {
 
     expect(getSearchResults).toHaveBeenCalledWith(
       "quantum",
-      20,
       "0704.0001",
       ["quant-ph", "cs.AI"],
       ["Alice"],

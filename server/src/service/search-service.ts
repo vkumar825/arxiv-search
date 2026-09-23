@@ -6,7 +6,9 @@ import { buildFilterExpression } from "../utils/filter-builder.js";
 const milvusClient = await getMilvusClient();
 const pipeline = await getPipelineInstance();
 
-const ALIAS = process.env.MILVUS_ALIAS as string;
+const ALIAS = process.env.MILVUS_ALIAS as string
+
+const LIMIT = 50; // total number of results to send back
 
 // Hybrid Search tuning constants
 const SPARSE_CANDIDATES_LIMIT = 100;
@@ -15,7 +17,6 @@ const K_CONSTANT = 60;
 
 export const getSearchResults = async (
   term: string,
-  limit: number = 10,
   arxivId: string = "",
   categories: string[] = [],
   authors: string[] = [],
@@ -33,7 +34,7 @@ export const getSearchResults = async (
     const queryResults = await milvusClient.query({
       collection_name: ALIAS,
       filter: filterExpression,
-      limit: limit,
+      limit: LIMIT,
       output_fields: [
         "arxivId",
         "authors",
@@ -86,7 +87,7 @@ export const getSearchResults = async (
         k: K_CONSTANT,
       },
     },
-    limit: limit,
+    limit: LIMIT,
     output_fields: [
       "arxivId",
       "authors",

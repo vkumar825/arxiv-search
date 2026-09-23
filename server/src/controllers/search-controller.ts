@@ -21,7 +21,6 @@ export const handleSearchRequest = async (
 ) => {
   try {
     const term = (req.query.term as string) || "";
-    const limit = parseInt(req.query.limit as string) || 10;
 
     const arxivId = (req.query.arxivId as string) || "";
     const categories = parseFilterArray(req.query.category as any);
@@ -29,7 +28,7 @@ export const handleSearchRequest = async (
     const createdDates = parseFilterArray(req.query.createdDate as any);
 
     req.log.info(
-      { term, limit, arxivId, categories, authors, createdDates },
+      { term, arxivId, categories, authors, createdDates },
       "Incoming search request",
     );
 
@@ -45,7 +44,6 @@ export const handleSearchRequest = async (
 
     const searchResults = await getSearchResults(
       term,
-      limit,
       arxivId,
       categories,
       authors,

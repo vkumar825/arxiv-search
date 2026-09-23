@@ -36,12 +36,42 @@ describe("Search Controller tests", () => {
     } as any);
   });
 
-  it("should return 400 error if term is missing", async () => {
+  it("should return 400 error if both term and filters are missing", async () => {
     req.query!.term = "";
     await handleSearchRequest(req as Request, res as Response, next);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: "Search term is required" });
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Search term or filter is required",
+    });
+  });
+
+  it("should return 400 error if term is only whitespace and filters are missing", async () => {
+    req.query!.term = "   ";
+    await handleSearchRequest(req as Request, res as Response, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Search term or filter is required",
+    });
+  });
+
+  it("should return 200 OK if term is empty but a filter is provided", async () => {
+    req.query = {
+      term: "",
+      author: "Somnath Choudhury",
+    };
+    await handleSearchRequest(req as Request, res as Response, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(getSearchResults).toHaveBeenCalledWith(
+      "",
+      10,
+      "",
+      [],
+      ["Somnath Choudhury"],
+      [],
+    );
   });
 
   it("should return 200 OK for a valid request query", async () => {

@@ -37,7 +37,7 @@ export const handleSearchRequest = async (
       arxivId || categories.length || authors.length || createdDates.length,
     );
 
-    if (term === "" && !hasFilter) {
+    if (!term.trim() && !hasFilter) {
       return res
         .status(400)
         .json({ error: "Search term or filter is required" });

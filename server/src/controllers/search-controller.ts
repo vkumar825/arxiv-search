@@ -20,7 +20,7 @@ export const handleSearchRequest = async (
   next: NextFunction,
 ) => {
   try {
-    const term = req.query.term as string;
+    const term = (req.query.term as string) || "";
     const limit = parseInt(req.query.limit as string) || 10;
 
     const arxivId = (req.query.arxivId as string) || "";
@@ -33,8 +33,14 @@ export const handleSearchRequest = async (
       "Incoming search request",
     );
 
-    if (!term || term === "") {
-      return res.status(400).json({ error: "Search term is required" });
+    const hasFilter = Boolean(
+      arxivId || categories.length || authors.length || createdDates.length,
+    );
+
+    if (term === "" && !hasFilter) {
+      return res
+        .status(400)
+        .json({ error: "Search term or filter is required" });
     }
 
     const searchResults = await getSearchResults(

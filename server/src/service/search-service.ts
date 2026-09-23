@@ -28,6 +28,30 @@ export const getSearchResults = async (
     createdDates,
   });
 
+  // use .query if search term is not provided
+  if (!term || term.trim() === "") {
+    const queryResults = await milvusClient.query({
+      collection_name: ALIAS,
+      filter: filterExpression,
+      limit: limit,
+      output_fields: [
+        "arxivId",
+        "authors",
+        "title",
+        "journalRef",
+        "doi",
+        "categories",
+        "abstract",
+        "createdDate",
+        "updatedDate",
+      ],
+    });
+
+    // exclude the "id" field from appearing in the API response
+    const sanitizedResults = queryResults.data.map(({ id, ...rest }) => rest);
+    return { results: sanitizedResults };
+  }
+
   // prepend bge query instruction to the search term for higher recall
   const encodedTerm = await pipeline(
     `Represent this sentence for searching relevant passages: ${term}`,

@@ -34,7 +34,7 @@ describe("ArxivSchema", () => {
       expect(model.abstract).toBe(sampleCleanedRecord.abstract);
       expect(model.createdDate).toBe("2007-04-02T19:18:42+00:00");
       expect(model.updatedDate).toBe("2007-07-24T20:10:27+00:00");
-      expect(model.vector).toBeNull();
+      expect(model.denseVector).toBeNull();
     });
 
     it("should handle nullable/optional fields when null", () => {
@@ -111,13 +111,13 @@ describe("ArxivSchema", () => {
         abstract: sampleCleanedRecord.abstract,
         createdDate: "2007-04-02T19:18:42+00:00",
         updatedDate: "2007-07-24T20:10:27+00:00",
-        vector: null,
+        denseVector: null,
       });
 
       // After vector assignment
       const mockVector = Array(384).fill(0.1);
-      model.vector = mockVector;
-      expect(model.object.vector).toEqual(mockVector);
+      model.denseVector = mockVector;
+      expect(model.object.denseVector).toEqual(mockVector);
     });
   });
 });

@@ -4,7 +4,7 @@ process.loadEnvFile();
 
 const serverDest = pino.destination({
   dest: process.env.PINO_SERVER_LOG_PATH as string,
-  sync: false,
+  sync: true,
   mkdir: true,
 });
 

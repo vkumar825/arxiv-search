@@ -1,30 +1,59 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { getSearchResults } from "../service/search-service.js";
 
-export const handleSearchRequest = async (req: Request, res: Response) => {
+const parseFilterArray = (elements: any): string[] => {
+  if (!elements) {
+    return [];
+  }
+
+  if (Array.isArray(elements)) {
+    return elements.map(String);
+  }
+
+  // if there is only one element, store it in an array
+  return [String(elements)];
+};
+
+export const handleSearchRequest = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const term = req.query.term as string;
+    const term = (req.query.term as string) || "";
     const limit = parseInt(req.query.limit as string) || 10;
-    const filter = (req.query.filter as string) || "";
 
-    req.log.info({ term, limit, filter }, "Incoming search request");
+    const arxivId = (req.query.arxivId as string) || "";
+    const categories = parseFilterArray(req.query.category as any);
+    const authors = parseFilterArray(req.query.author as any);
+    const createdDates = parseFilterArray(req.query.createdDate as any);
 
-    if (!term || term === "") {
-      return res.status(400).json({ error: "Search term is required" });
+    req.log.info(
+      { term, limit, arxivId, categories, authors, createdDates },
+      "Incoming search request",
+    );
+
+    const hasFilter = Boolean(
+      arxivId || categories.length || authors.length || createdDates.length,
+    );
+
+    if (!term.trim() && !hasFilter) {
+      return res
+        .status(400)
+        .json({ error: "Search term or filter is required" });
     }
 
-    const searchResults = await getSearchResults(term, limit, filter);
+    const searchResults = await getSearchResults(
+      term,
+      limit,
+      arxivId,
+      categories,
+      authors,
+      createdDates,
+    );
 
-    if (req.baseUrl === "/api/v1") {
-      // exclude vector field from the results (because it makes it messy to read)
-      const sanitizedResults = searchResults.results.map((item) => {
-        const { vector, ...rest } = item;
-        return rest;
-      });
-      return res.status(200).json({ results: sanitizedResults });
-    }
-  } catch (error: any) {
-    req.log.error({ err: error.message }, "Search request failed");
-    res.status(500).json({ error: error.message });
+    return res.status(200).json({ results: searchResults.results || [] });
+  } catch (error) {
+    next(error);
   }
 };

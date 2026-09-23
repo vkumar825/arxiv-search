@@ -35,7 +35,6 @@ app.use(
 await getMilvusClient();
 
 // use built-in Express.js middlewares
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use("/api/v1", searchRouter);

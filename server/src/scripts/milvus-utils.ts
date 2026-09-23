@@ -87,6 +87,25 @@ const renameMilvusCollection = async (
   }
 };
 
+const clearMilvusCollection = async (client: MilvusClient, name: string) => {
+  const collections = await getMilvusCollections(client);
+
+  if (!collections.some((c) => c.collection_name === name)) {
+    console.log(`Cannot clear non-existent Milvus collection: ${name}`);
+    return;
+  }
+
+  try {
+    await client.truncateCollection({
+      collection_name: name,
+    });
+    console.log(`Successfully cleared Milvus collection: ${name}`);
+  } catch (error) {
+    console.error("Failed to clear Milvus collection: ", error);
+    throw error;
+  }
+};
+
 const dropMilvusCollection = async (client: MilvusClient, name: string) => {
   const collections = await getMilvusCollections(client);
 
@@ -95,16 +114,21 @@ const dropMilvusCollection = async (client: MilvusClient, name: string) => {
     return;
   }
 
+  let aliasLabel = "alias";
+
   const res = await client.listAliases({ collection_name: name });
 
   if (Array.isArray(res.aliases) && res.aliases.length > 0) {
+    if (res.aliases.length > 1) {
+      aliasLabel += "es";
+    }
     console.log(
-      `Detected ${res.aliases.length} alias(es), dropping them first...`,
+      `Detected ${res.aliases.length} ${aliasLabel}, dropping them first...`,
     );
     for (const alias of res.aliases) {
       await dropMilvusAlias(client, alias);
     }
-    console.log("Finished dropping alias(es), now dropping collection...");
+    console.log(`Finished dropping ${aliasLabel}, now dropping collection...`);
   }
 
   try {
@@ -154,11 +178,11 @@ if (isMain) {
 
     const create = program
       .command("create")
-      .description("create Milvus resources");
+      .description("Create Milvus resources");
 
     create
       .command("collection <name>")
-      .description("create a new collection")
+      .description("Create a collection")
       .action(
         runMilvusClient(async (client, name) => {
           await createMilvusCollection(client, name);
@@ -167,7 +191,7 @@ if (isMain) {
 
     create
       .command("alias <aliasName> <collectionName>")
-      .description("create alias for a collection")
+      .description("Create an alias for a collection")
       .action(
         runMilvusClient(async (client, aliasName, collectionName) => {
           await createMilvusAlias(client, aliasName, collectionName);
@@ -178,7 +202,7 @@ if (isMain) {
 
     drop
       .command("collection <name>")
-      .description("drop a collection")
+      .description("Drop a collection")
       .action(
         runMilvusClient(async (client, name) => {
           await dropMilvusCollection(client, name);
@@ -187,14 +211,24 @@ if (isMain) {
 
     drop
       .command("alias <aliasName>")
-      .description("drop an alias")
+      .description("Drop an alias")
       .action(
         runMilvusClient(async (client, aliasName) => {
           await dropMilvusAlias(client, aliasName);
         }),
       );
 
-    const list = program.command("list").description("list Milvus resources");
+    const clear = program
+      .command("clear <collectionName>")
+      .description("Clear a collection");
+
+    clear.action(
+      runMilvusClient(async (client, collectionName) => {
+        await clearMilvusCollection(client, collectionName);
+      }),
+    );
+
+    const list = program.command("list").description("List Milvus resources");
 
     list.action(
       runMilvusClient(async (client) => {
@@ -222,7 +256,7 @@ if (isMain) {
 
     const rename = program
       .command("rename <oldName> <newName>")
-      .description("rename a collection");
+      .description("Rename a collection");
 
     rename.action(
       runMilvusClient(async (client, oldName, newName) => {
@@ -232,7 +266,7 @@ if (isMain) {
 
     const reassign = program
       .command("reassign <aliasName> <collectionName>")
-      .description("reassign an alias to another collection");
+      .description("Reassign an alias to another collection");
 
     reassign.action(
       runMilvusClient(async (client, aliasName, collectionName) => {
@@ -242,18 +276,18 @@ if (isMain) {
 
     const ingest = program
       .command("ingest <collectionName>")
-      .description("ingest objects to a Milvus collection")
+      .description("Ingest objects to a Milvus collection")
       .option(
         "-b, --batch-size <number>",
-        "number of objects to ingest per batch",
+        "Number of objects to ingest per batch",
         "1000",
       )
       .option(
         "-e, --embed-batch-size <number>",
-        "number of objects to process per embedding call",
+        "Number of objects to process per embedding call",
         "128",
       )
-      .option("-l, --limit <number>", "maximum number of objects to ingest");
+      .option("-l, --limit <number>", "Maximum number of objects to ingest");
 
     ingest.action(
       runMilvusClient(async (client, collectionName, options) => {

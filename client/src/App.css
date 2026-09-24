@@ -69,3 +69,36 @@
   margin: 8px 0 0 0;
   font-size: 14px;
 }
+
+.result-meta summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.pagination-button {
+  background-color: #b31b1b;
+  color: #ffffff;
+  border: 1px solid #b31b1b;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #444444;
+}

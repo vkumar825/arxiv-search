@@ -1,36 +1,45 @@
 import { useState } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { ResultCard } from "./components/ResultCard";
+import { Pagination } from "./components/Pagination";
 import { retrievePapers } from "./services/api";
 import type { Paper } from "./types/search";
 import "./App.css";
 
+
 export function App() {
   const [papers, setPapers] = useState<Paper[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleSearch = async (term: string) => {
-    setLoading(true);
+    setCurrentPage(1);
     try {
       const data = await retrievePapers(term);
       setPapers(data);
     } catch (err) {
       console.error("Search failed:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
+  const pageSize = 10;
+  const totalPages = Math.ceil(papers.length / pageSize) 
+  const start = (Number(currentPage) -1) * pageSize;
+  const end = start + pageSize;
+  const paginatedPapers = papers.slice(start, end)
+ 
   return (
     <div className="app-container">
       <h1>arXiv Search</h1>
-      <SearchBar onSearch={handleSearch} loading={loading} />
+      <SearchBar onSearch={handleSearch} />
 
       <div className="results-container">
-        {papers.map((paper) => (
+        {paginatedPapers.map((paper) => (
           <ResultCard key={paper.arxivId} paper={paper} />
         ))}
       </div>
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+
     </div>
   );
 }

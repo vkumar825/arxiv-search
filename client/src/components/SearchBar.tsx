@@ -2,10 +2,9 @@ import { useState, type SubmitEvent } from "react";
 
 interface SearchBarProps {
   onSearch: (term: string) => void;
-  loading: boolean;
 }
 
-export function SearchBar({ onSearch, loading }: SearchBarProps) {
+export function SearchBar({ onSearch }: SearchBarProps) {
   const [term, setTerm] = useState("");
 
   const handleSubmit = (e: SubmitEvent) => {
@@ -24,8 +23,8 @@ export function SearchBar({ onSearch, loading }: SearchBarProps) {
         value={term}
         onChange={(e) => setTerm(e.target.value)}
       />
-      <button type="submit" className="search-button" disabled={loading}>
-        {loading ? "Searching..." : "Search"}
+      <button type="submit" className="search-button">
+        Search
       </button>
     </form>
   );

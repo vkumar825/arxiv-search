@@ -4,10 +4,65 @@
   padding: 20px;
 }
 
+.app-header {
+  margin: 10px 0 20px 0;
+}
+
+.app-title {
+  margin: 0 0 6px 0;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-family: "Times New Roman", Times, Georgia, serif;
+}
+
+.arxiv-x {
+  color: #b31b1b;
+  font-weight: 400;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #555555;
+  line-height: 1.4;
+}
+
+.clear-search-container {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 6px 0;
+}
+
+.clear-search-button {
+  background: none;
+  border: none;
+  color: #b31b1b;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  font-family: inherit;
+}
+
+.no-results-banner {
+  margin: 36px 0;
+  text-align: center;
+  color: #666666;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 .search-form {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin: 20px 0;
+}
+
+.search-bar-row {
+  display: flex;
+  gap: 8px;
 }
 
 .search-input {
@@ -16,6 +71,17 @@
   font-family: inherit;
   font-size: 16px;
   border: 1px solid #999;
+}
+
+.filter-toggle-button {
+  background-color: #f7f7f7;
+  color: #000000;
+  border: 1px solid #999;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .search-button {
@@ -31,6 +97,79 @@
 .search-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.filter-panel {
+  border: 1px solid #ccc;
+  background-color: #fafafa;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.filter-input {
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-date-input {
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+}
+
+.date-separator {
+  font-size: 13px;
+  color: #666666;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filter-clear-btn {
+  background: none;
+  border: none;
+  color: #b31b1b;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.error-banner {
+  background-color: #fff0f0;
+  color: #b31b1b;
+  border: 1px solid #b31b1b;
+  padding: 10px 14px;
+  margin: 16px 0;
+  font-size: 14px;
 }
 
 .results-container {

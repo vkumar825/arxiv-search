@@ -66,6 +66,7 @@ describe("Search Controller tests", () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(getSearchResults).toHaveBeenCalledWith(
       "",
+      50,
       "",
       [],
       ["Somnath Choudhury"],
@@ -105,6 +106,7 @@ describe("Search Controller tests", () => {
 
     expect(getSearchResults).toHaveBeenCalledWith(
       "quantum",
+      50,
       "0704.0001",
       ["quant-ph", "cs.AI"],
       ["Alice"],

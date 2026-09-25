@@ -1,6 +1,8 @@
 # arxiv-search
 
-**arXiv Search** is a search engine application powered by the Milvus vector database, Node, Express, and React to allow users to find arXiv papers efficiently via hybrid search (semantic + keyword).
+**arXiv Search** is a search engine application powered by the Milvus vector database, Node, Express, and React to allow users to find arXiv papers efficiently via hybrid search (semantic + lexical).
+
+<img width="983" height="719" alt="image" src="https://github.com/user-attachments/assets/a2c77203-c771-4a6f-bef6-c951e2604b9b" />
 
 ## Getting Started
 

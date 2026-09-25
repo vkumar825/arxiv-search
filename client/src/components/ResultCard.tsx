@@ -20,30 +20,26 @@ export function ResultCard({ paper }: { paper: Paper }) {
   };
 
   const displayAbstractText = (paper: Paper) => {
-    const expandButton = (
-      <button className="result-abstract" onClick={viewMoreAbstract}>
-        {!expandAbstract ? "Read more" : "Show less"}
-      </button>
+    const isLongAbstract = paper.abstract.length > 1300;
+    const displayText =
+      isLongAbstract && !expandAbstract
+        ? `${paper.abstract.slice(0, 500).trimEnd()}...`
+        : paper.abstract;
+
+    return (
+      <div className="result-abstract">
+        <p className="result-abstract-text">{displayText}</p>
+        {isLongAbstract && (
+          <button
+            type="button"
+            className="abstract-toggle-btn"
+            onClick={viewMoreAbstract}
+          >
+            {!expandAbstract ? "Read more" : "Show less"}
+          </button>
+        )}
+      </div>
     );
-    if (paper.abstract.length <= 1300 || expandAbstract) {
-      if (expandAbstract) {
-        return (
-          <>
-            {paper.abstract} {expandButton}
-          </>
-        );
-      }
-      return paper.abstract;
-    } else {
-      return (
-        <>
-          <p className="result-abstract">
-            {paper.abstract.slice(0, 500).trimEnd()}...
-          </p>
-          {expandButton}
-        </>
-      );
-    }
   };
 
   return (
@@ -99,7 +95,7 @@ export function ResultCard({ paper }: { paper: Paper }) {
           </p>
         </>
       )}
-      <p className="result-abstract">{displayAbstractText(paper)}</p>
+      {displayAbstractText(paper)}
     </div>
   );
 }

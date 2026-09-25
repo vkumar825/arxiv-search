@@ -70,6 +70,23 @@
   font-size: 14px;
 }
 
+.result-abstract-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.abstract-toggle-btn {
+  margin-top: 8px;
+  background-color: #b31b1b;
+  color: #ffffff;
+  border: 1px solid #b31b1b;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .result-meta summary {
   cursor: pointer;
   user-select: none;

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import express from "express";
+import cors from "cors";
 import { searchRouter } from "./routes/search-route.js";
 import { getMilvusClient } from "./config/milvus-client.js";
 import { server as serverLogger } from "./utils/logger.js";
@@ -14,7 +15,8 @@ const app = express();
 const formatHttpLog = (req: any, res: any) =>
   `${req.method} ${req.url} ${res.statusCode} ${res.statusMessage}`;
 
-// use pino-http middleware
+await getMilvusClient(); // initialize milvusClient
+
 app.use(
   pinoHttp({
     logger: serverLogger,
@@ -31,11 +33,9 @@ app.use(
   }),
 );
 
-// initialize milvusClient
-await getMilvusClient();
-
-// use built-in Express.js middlewares
 app.use(express.json());
+
+app.use(cors());
 
 app.use("/api/v1", searchRouter);
 

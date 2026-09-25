@@ -1,0 +1,260 @@
+.app-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-header {
+  margin: 10px 0 20px 0;
+}
+
+.app-title {
+  margin: 0 0 6px 0;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-family: "Times New Roman", Times, Georgia, serif;
+}
+
+.arxiv-x {
+  color: #b31b1b;
+  font-weight: 400;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #555555;
+  line-height: 1.4;
+}
+
+.clear-search-container {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 6px 0;
+}
+
+.clear-search-button {
+  background: none;
+  border: none;
+  color: #b31b1b;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  font-family: inherit;
+}
+
+.no-results-banner {
+  margin: 36px 0;
+  text-align: center;
+  color: #666666;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.search-bar-row {
+  display: flex;
+  gap: 8px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  border: 1px solid #999;
+}
+
+.filter-toggle-button {
+  background-color: #f7f7f7;
+  color: #000000;
+  border: 1px solid #999;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.search-button {
+  background-color: #b31b1b;
+  color: #ffffff;
+  border: 1px solid #b31b1b;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.search-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.filter-panel {
+  border: 1px solid #ccc;
+  background-color: #fafafa;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.filter-input {
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-date-input {
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
+}
+
+.date-separator {
+  font-size: 13px;
+  color: #666666;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filter-clear-btn {
+  background: none;
+  border: none;
+  color: #b31b1b;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.error-banner {
+  background-color: #fff0f0;
+  color: #b31b1b;
+  border: 1px solid #b31b1b;
+  padding: 10px 14px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  border: 1px solid #ccc;
+  padding: 16px;
+  background-color: #ffffff;
+}
+
+.result-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.result-title a {
+  color: #000000;
+  text-decoration: underline;
+}
+
+.result-title a:hover {
+  color: #b31b1b;
+}
+
+.result-meta {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #444444;
+}
+
+.result-abstract {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+}
+
+.result-abstract-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.abstract-toggle-btn {
+  margin-top: 8px;
+  background-color: #b31b1b;
+  color: #ffffff;
+  border: 1px solid #b31b1b;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.result-meta summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.pagination-button {
+  background-color: #b31b1b;
+  color: #ffffff;
+  border: 1px solid #b31b1b;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #444444;
+}

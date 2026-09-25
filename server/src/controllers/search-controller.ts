@@ -21,7 +21,7 @@ export const handleSearchRequest = async (
 ) => {
   try {
     const term = (req.query.term as string) || "";
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = Number(req.query.limit) || 50;
 
     const arxivId = (req.query.arxivId as string) || "";
     const categories = parseFilterArray(req.query.category as any);

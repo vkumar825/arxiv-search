@@ -1,6 +1,6 @@
 # arxiv-search
 
-`arxiv-search` is a search engine application powered by the Milvus vector database, Node, Express, and React to allow users to find arXiv papers efficiently via hybrid search (semantic + keyword).  
+**arXiv Search** is a search engine application powered by the Milvus vector database, Node, Express, and React to allow users to find arXiv papers efficiently via hybrid search (semantic + keyword).
 
 ## Getting Started
 
@@ -37,11 +37,14 @@ Follow these steps to get the project up and running on your local machine.
    _(You can also use `./run-docker.sh stop` to stop it, or `./run-docker.sh delete` to delete data)._
 
 4. **Install Node dependencies:**
-   Navigate to the `server` directory and install the required packages:
+   Install dependencies for both the backend server and client:
 
    ```bash
-   cd server
-   npm install
+   # Server dependencies
+   cd server && npm install && cd ..
+
+   # Client dependencies
+   cd client && npm install && cd ..
    ```
 
 5. **Dataset Cleaning:**
@@ -50,105 +53,134 @@ Follow these steps to get the project up and running on your local machine.
 6. **Viewing Data:**
    To explore the data ingested into Milvus, you can use the built-in Milvus WebUI (accessible at `http://localhost:9091/webui/`).
 
-   However, using **Attu** is highly recommended for better UI/UX experience. You can download the Attu desktop client from its [releases page](https://github.com/zilliztech/attu/releases).
+   However, using **Attu** is highly recommended for a better UI/UX experience. You can download the Attu desktop client from its [releases page](https://github.com/zilliztech/attu/releases).
 
-## Usage
+## Basic Workflow
 
-Once your Milvus database is running and dependencies are installed, you can use the built-in CLI utility to interact with the database, or use the Express API to perform searches. Ensure you run these commands from the **root directory** of the repository (where your `.env` file is located).
+To reproduce this project and ingest ~100k papers from scratch:
 
-### CLI Commands (milvus-utils.ts)
+> **Note:** Ensure Milvus is running first (`./run-docker.sh start`).
 
-**View Help:**
-To view the help menu with all available commands and options:
-
-```bash
-npx tsx ./server/src/scripts/milvus-utils.ts --help
-```
-
-**List Resources:**
-List all current collections and their associated aliases:
+**1. Clean Dataset (Sample Every 31st Paper):**
 
 ```bash
-npx tsx ./server/src/scripts/milvus-utils.ts list
+cd pipeline
+uv run clean.py --step 31
+cd ..
 ```
 
-**Create Resources:**
-Create a new collection or map an alias to a collection:
+**2. Setup Milvus Collection & Ingest:**
 
 ```bash
-# Create a collection
-npx tsx ./server/src/scripts/milvus-utils.ts create collection <collectionName>
+# 1. Create collection
+npx tsx ./server/src/scripts/milvus-utils.ts create collection arxiv
 
-# Create an alias
-npx tsx ./server/src/scripts/milvus-utils.ts create alias <aliasName> <collectionName>
+# 2. Assign alias configured in .env
+npx tsx ./server/src/scripts/milvus-utils.ts create alias arxiv_alias arxiv
+
+# 3. Ingest cleaned records & generate embeddings
+npx tsx ./server/src/scripts/milvus-utils.ts ingest arxiv
 ```
 
-**Ingest Data:**
-Load objects into a specified Milvus collection:
+**3. Run the App:**
 
 ```bash
-npx tsx ./server/src/scripts/milvus-utils.ts ingest <collectionName>
+# Terminal 1: API Server (port 3000)
+./run-server.sh
+
+# Terminal 2: React Client (port 5173)
+cd client && npm run dev
 ```
 
-_Optional Flags:_
-
-- `-b, --batch-size <number>`: Number of objects to ingest per batch (default: 1000).
-- `-e, --embed-batch-size <number>`: Number of objects to process per embedding call (default: 128).
-- `-l, --limit <number>`: Maximum number of objects to ingest (useful for testing/development).
-
-**Drop Resources:**
-Remove a collection or an alias from the database:
-
-```bash
-# Drop a collection
-npx tsx ./server/src/scripts/milvus-utils.ts drop collection <collectionName>
-
-# Drop an alias
-npx tsx ./server/src/scripts/milvus-utils.ts drop alias <aliasName>
-```
-
-### Running Vitest Tests
-
-This project uses [Vitest](https://vitest.dev/) for unit testing. To run the test suite, ensure your Node dependencies are installed, then run the following from the root directory:
-
-```bash
-npx vitest run
-```
-
-To run tests in watch mode (ideal during development):
-
-```bash
-npx vitest
-```
-
-To run a specific test file, pass the path directly:
-
-```bash
-npx vitest run server/src/models/milvus-schema.test.ts
-```
-
-### Using the Search API (Express.js)
+## Using the Search API (Express.js)
 
 **Start the API server:**
-Run the `index.ts` entry point to start the Express.js server
+Start the Express server using the provided helper script with formatted logging:
+
+```bash
+./run-server.sh
+```
+
+Alternatively, run the entry point directly:
 
 ```bash
 npx tsx ./server/src/index.ts
 ```
 
-**Make a Search Request:**
-By default, the server runs on port 3000 (unless configured otherwise in `.env`). You can use `curl` or your browser to make a GET request to the `/api/v1/search` endpoint:
+By default, the server runs on port 3000 (unless configured otherwise in `.env`).
 
-```bash
-curl "http://localhost:3000/api/v1/search?term=machine+learning&limit=5"
-```
+**Endpoint:**
+`GET /api/v1/search`
 
 **Parameters:**
 
-- `term`: (Required) The string query to search for.
-- `limit`: (Optional) The maximum number of results to return (default: 10).
-- `filter`: (Optional) A categorical filter expression.
+| Parameter     | Type     | Required | Default | Description                                                     |
+| :------------ | :------- | :------- | :------ | :-------------------------------------------------------------- |
+| `term`        | `string` | No\*     | `""`    | Search query for hybrid semantic (BGE) + lexical (BM25) search. |
+| `limit`       | `number` | No       | `50`    | Maximum number of results to return.                            |
+| `author`      | `string` | No       | `""`    | Filter papers by author name (e.g. `author=Yoshua Bengio`).     |
+| `category`    | `string` | No       | `""`    | Filter by category code (e.g. `category=cs.AI`).                |
+| `createdDate` | `string` | No       | `""`    | Filter by date range (pass twice: start and end ISO dates).     |
+| `arxivId`     | `string` | No       | `""`    | Filter by specific arXiv paper ID (e.g. `arxivId=2202.08371`).  |
 
+_\*Note: Either `term` or at least one filter (`author`, `category`, `createdDate`, `arxivId`) must be supplied._
+
+**Example Requests:**
+
+_(Tip: Pipe curl output into [`jq`](https://jqlang.github.io/jq/) like `curl -s "..." | jq .` to pretty-print the JSON response in your terminal)._
+
+1. **Hybrid Search (Semantic + Keyword):**
+
+   ```bash
+   curl -s "http://localhost:3000/api/v1/search?term=attention%20is%20all%20you%20need&limit=5"
+   ```
+
+2. **arXiv ID Lookup:**
+
+   ```bash
+   curl -s "http://localhost:3000/api/v1/search?arxivId=2202.08371"
+   ```
+
+3. **Author Filter:**
+
+   ```bash
+   curl -s "http://localhost:3000/api/v1/search?author=Yoshua%20Bengio&limit=10"
+   ```
+
+4. **Hybrid Search with Category Filter:**
+
+   ```bash
+   curl -s "http://localhost:3000/api/v1/search?term=diffusion%20models&category=cs.CV&limit=10"
+   ```
+
+5. **Date Range Filter:**
+   ```bash
+   curl -s "http://localhost:3000/api/v1/search?category=stat.ML&createdDate=2023-01-01&createdDate=2023-12-31"
+   ```
+
+## Running the Web Client (React)
+
+The repository includes a minimalist React frontend in the `client/` directory.
+
+1. Create a `client/.env` file from the example:
+   ```bash
+   cp client/.env.example client/.env
+   ```
+2. Start the Vite development server:
+   ```bash
+   cd client
+   npm run dev
+   ```
+3. Open `http://localhost:5173` in your browser.
+
+## Running Tests
+
+Run the backend unit test suite using Vitest from the `server` directory:
+
+```bash
+cd server
+npm test
+```
 
 ## Acknowledgements
 

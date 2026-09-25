@@ -53,6 +53,7 @@ export function ResultCard({ paper }: { paper: Paper }) {
           {paper.title}
         </a>
       </h3>
+      <p className="result-meta"><strong>arXiv ID:</strong> {paper.arxivId}</p>
       {paper.authors.length <= 10 ? (
         <p className="result-meta">
           <strong>Authors:</strong> {paper.authors?.join(", ")}

@@ -1,4 +1,5 @@
 export interface FilterState {
+  arxivId: string;
   categories: string;
   authors: string;
   startDate: string;
@@ -14,6 +15,17 @@ interface FilterPanelProps {
 export function FilterPanel({ filters, onChange, onClear }: FilterPanelProps) {
   return (
     <div className="filter-panel">
+      <div className="filter-group">
+        <label className="filter-label">arXiv ID</label>
+        <input
+          type="text"
+          className="filter-input"
+          placeholder="e.g. 2202.08371, hep-th/0204153"
+          value={filters.arxivId}
+          onChange={(e) => onChange({ ...filters, arxivId: e.target.value })}
+        />
+      </div>
+
       <div className="filter-group">
         <label className="filter-label">Categories</label>
         <input

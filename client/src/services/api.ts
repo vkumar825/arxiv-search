@@ -14,6 +14,10 @@ export async function retrievePapers(
 
   params.append("limit", "50");
 
+  if (filters.arxivId?.trim()) {
+    params.append("arxivId", filters.arxivId.trim());
+  }
+
   filters.categories?.forEach((category) =>
     params.append("category", category),
   );

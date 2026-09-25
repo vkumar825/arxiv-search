@@ -11,6 +11,7 @@ export interface Paper {
 }
 
 export interface SearchFilters {
+  arxivId?: string;
   categories?: string[];
   authors?: string[];
   createdDates?: string[];

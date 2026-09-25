@@ -8,6 +8,7 @@ interface SearchBarProps {
 }
 
 const initialFilters: FilterState = {
+  arxivId: "",
   categories: "",
   authors: "",
   startDate: "",
@@ -20,6 +21,7 @@ export function SearchBar({ onSearch, onError }: SearchBarProps) {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   const hasActiveFilters = Boolean(
+    filters.arxivId.trim() ||
     filters.categories.trim() ||
     filters.authors.trim() ||
     filters.startDate ||
@@ -45,11 +47,13 @@ export function SearchBar({ onSearch, onError }: SearchBarProps) {
     }
 
     const parsedFilters: SearchFilters = {};
+    if (filters.arxivId.trim()) parsedFilters.arxivId = filters.arxivId.trim();
     if (categoriesList.length > 0) parsedFilters.categories = categoriesList;
     if (authorsList.length > 0) parsedFilters.authors = authorsList;
     if (datesList.length > 0) parsedFilters.createdDates = datesList;
 
     const hasAnyFilters = Boolean(
+      parsedFilters.arxivId ||
       (parsedFilters.categories && parsedFilters.categories.length > 0) ||
       (parsedFilters.authors && parsedFilters.authors.length > 0) ||
       (parsedFilters.createdDates && parsedFilters.createdDates.length > 0),

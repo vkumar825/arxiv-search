@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-09-25
+
+### Added
+
+- Integrated React.js + TypeScript `/client` into the repository using Vite
+- Added `cors` middleware to `index.ts` to allow cross-origin requests from the client
+- Created `client/src/types/search.ts` with TypeScript interfaces for `Paper` records and `SearchFilters`
+- Created `client/src/services/api.ts` to communicate with the Express API via `VITE_API_URL`
+- Created modular components to build out the App's search page
+- Included author collapsing, abstract truncation for the `ResultCard` for enhanced user experience
+- Allow ability to retrieve results without search term, purely by filters
+- Implemented `Pagination` component (10 papers per page)
+- Formalized the basic, minimalistic styling for the search page
+
+### Changed
+
+- Restored limit query parameter on `GET /api/v1/search`, defaulting to 50 for the frontend, adjustable via `curl` & API
+- Streamlined root `README.md` for simplicity, and provided a basic reproducible workflow
+
+### Fixed
+
+- Adapted `search-controller.test.ts` to work with the re-added `limit` query, and changed to 50
+
 ## [0.3.3] - 2026-09-23
 
 ### Added
